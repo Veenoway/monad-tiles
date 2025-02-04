@@ -1,48 +1,28 @@
-"use client";
 import { CardsType } from "@/features/home/models";
 import { cn } from "@/utils/cn";
 import Image from "next/image";
-import { useEffect, useState } from "react";
 import Tilt from "react-parallax-tilt";
 
-type CardType = {
+type CardProps = {
   card: CardsType;
-  handleReset: (reset: () => void) => void;
-  shouldReset: boolean;
-  handleCardClick: (
-    setIsFliped: (value: boolean) => void,
-    card: CardsType
-  ) => void;
+  isFlipped: boolean;
+  isLoading: boolean;
+  onClick: () => void;
+  disabled: boolean;
 };
 
-export const Card = ({
-  card,
-  handleReset,
-  setUserSession,
-  shouldReset,
-  handleCardClick,
-  userSession,
-}: CardType) => {
-  const [isFliped, setIsFliped] = useState<boolean>(false);
-
-  useEffect(() => {
-    console.log("IS CALLED");
-    if (isFliped) {
-      handleCardClick(setIsFliped, card);
-    }
-  }, [isFliped]);
-
+export const Card = ({ card, isFlipped, onClick, disabled }: CardProps) => {
   const options = {
     glareEnable: true,
     glareMaxOpacity: 0.4,
     glareColor: "#ccc4fc",
     glarePosition: "all",
-    glareBorderRadius: "40px",
+    glareBorderRadius: "10px",
     perspective: 2000,
     scale: 1,
     gyroscope: false,
     transitionSpeed: 1000,
-    flipHorizontally: isFliped,
+    flipHorizontally: isFlipped,
     tiltReverse: false,
   };
 
@@ -50,49 +30,39 @@ export const Card = ({
     <Tilt
       {...options}
       className={cn(
-        "tiltcard cursor-pointer shadow-2xl bg-cover border-2 border-red-dark rounded-2xl relative parallax-effect-glare-scale h-[350px] w-auto"
+        " shadow-2xl border-2 bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)] rounded-xl relative  h-[350px] w-auto",
+        {
+          "cursor-pointer hover:scale-105 transition-transform": !disabled,
+          "cursor-not-allowed opacity-70": disabled,
+        }
       )}
     >
       <div
-        onClick={() => {
-          setUserSession((prev) => ({
-            ...prev,
-            prevGuess: prev.guess,
-            guess: card.src,
-          }));
-          setIsFliped((prev) => !prev);
-        }}
-        className="w-full relative h-full flex justify-center items-center idd"
-        // onClick={() => {
-        //   setTurned(true);
-        //   setIsFliped((prev) => !prev);
-        //   setTimeout(() => setTurned(false), isFliped ? 1000 : 200);
-        // }}
+        onClick={() => !disabled && onClick()}
+        className="w-full relative h-full flex justify-center items-center"
       >
-        {isFliped || userSession?.successCard.includes(card.src) ? (
-          <div
-            className="z-1 rounded-[10px] flex flex-col bg-[#FFB200] justify-center items-center"
-            style={{
-              width: "calc(100% - 20px)",
-              height: "calc(100% - 20px)",
-            }}
-          >
+        <div
+          className={cn(
+            "z-1 rounded-xl flex flex-col justify-center items-center transition-all duration-300",
+            {
+              "bg-[#FFB200]": isFlipped,
+              "bg-[url('/cards/verso.jpg')] bg-right bg-cover": !isFlipped,
+            }
+          )}
+          style={{
+            width: "calc(100% - 20px)",
+            height: "calc(100% - 20px)",
+          }}
+        >
+          {isFlipped && (
             <Image
               src={card.src}
-              alt="Card name"
+              alt="Card"
               fill={true}
-              className="rounded-xl"
+              className="rounded-lg object-cover"
             />
-          </div>
-        ) : (
-          <div
-            className="z-1 rounded-[10px] bg-red-600 flex justify-center items-center"
-            style={{
-              width: "calc(100% - 20px)",
-              height: "calc(100% - 20px)",
-            }}
-          ></div>
-        )}
+          )}
+        </div>
       </div>
     </Tilt>
   );

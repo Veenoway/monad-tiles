@@ -19,6 +19,10 @@ export const cardsMemory: { src: string; id: number; random?: any }[] = [
     src: "/cards/portdev.webp",
     id: 4,
   },
+  {
+    src: "/cards/mouch.png",
+    id: 4,
+  },
 ];
 
 export const defaultUserSession = {
