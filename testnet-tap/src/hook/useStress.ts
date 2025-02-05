@@ -11,7 +11,6 @@ import {
   useConnect,
   useReadContract,
   useSwitchChain,
-  useWaitForTransactionReceipt,
   useWatchContractEvent,
   useWriteContract,
 } from "wagmi";
@@ -24,19 +23,32 @@ type TopStresser = {
 type UserStats = {
   stressCount: bigint;
   lastStressTime: bigint;
+  remainingAllowance: bigint;
+  approvedStressCount: bigint;
 };
 
 export function useEnhancedStressTest() {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
+
+  // Remplace si besoin par la bonne chain
   const REQUIRED_CHAIN_ID = 20143;
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
 
+  // Coût par “stress”
+  const STRESS_COST = BigInt(16e16);
+  // Par défaut, on proposera 10 “stress” si l’utilisateur veut tout payer en une fois
+  const BATCH_SIZE = 10;
+
+  // States
   const [globalStressCount, setGlobalStressCount] = useState<bigint>(BigInt(0));
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [topStressers, setTopStressers] = useState<TopStresser[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedCount, setSelectedCount] = useState(BATCH_SIZE);
 
+  // Vérifie la chaîne et switch si besoin
   const checkAndSwitchNetwork = async () => {
     if (chainId !== REQUIRED_CHAIN_ID) {
       try {
@@ -48,6 +60,7 @@ export function useEnhancedStressTest() {
     }
   };
 
+  // READ : Récupère globalStressCount
   const { data: currentGlobalCount, refetch: refetchGlobalCount } =
     useReadContract({
       address: STRESS_CONTRACT_ADDRESS,
@@ -55,16 +68,18 @@ export function useEnhancedStressTest() {
       functionName: "getGlobalStressCount",
     });
 
+  // READ : Récupère les stats utilisateur
   const { data: currentUserStats, refetch: refetchUserStats } = useReadContract(
     {
       address: STRESS_CONTRACT_ADDRESS,
       abi: STRESS_CONTRACT_ABI,
       functionName: "getUserStats",
-      args: [address],
+      args: address ? [address] : undefined,
       enabled: Boolean(address),
     }
   );
 
+  // READ : Récupère topStressers
   const { data: currentTopStressers, refetch: refetchTopStressers } =
     useReadContract({
       address: STRESS_CONTRACT_ADDRESS,
@@ -72,124 +87,103 @@ export function useEnhancedStressTest() {
       functionName: "getTopStressers",
     });
 
+  // Met à jour nos states quand les reads changent
+  useEffect(() => {
+    if (currentGlobalCount) setGlobalStressCount(currentGlobalCount);
+    if (currentUserStats) setUserStats(currentUserStats as UserStats);
+    if (currentTopStressers)
+      setTopStressers(currentTopStressers as TopStresser[]);
+  }, [currentGlobalCount, currentUserStats, currentTopStressers]);
+
+  // Polling : toutes les 2s, on refresh
   useEffect(() => {
     const interval = setInterval(() => {
       refetchGlobalCount();
       if (address) refetchUserStats();
       refetchTopStressers();
     }, 2000);
-
     return () => clearInterval(interval);
   }, [refetchGlobalCount, refetchUserStats, refetchTopStressers, address]);
 
+  // Écoute de l'événement StressIncremented
   useWatchContractEvent({
     address: STRESS_CONTRACT_ADDRESS,
     abi: STRESS_CONTRACT_ABI,
     eventName: "StressIncremented",
-    onLogs(logs) {
-      const { user, userCount, newGlobalCount } = logs[0].args;
+    listener(logs) {
+      const {
+        user,
+        userCount,
+        newGlobalCount,
+        remainingAllowance,
+        approvedStressCount,
+      } = logs[0].args;
+
+      // On met à jour le global
       setGlobalStressCount(newGlobalCount);
 
-      refetchGlobalCount();
+      // Si c’est l’utilisateur courant, on met à jour
       if (user === address) {
-        refetchUserStats();
+        setUserStats((prev) => ({
+          ...prev!,
+          stressCount: userCount,
+          remainingAllowance,
+          approvedStressCount,
+        }));
       }
+
+      // Rafraîchir le classement
       refetchTopStressers();
     },
   });
 
-  useEffect(() => {
-    if (currentGlobalCount) {
-      setGlobalStressCount(currentGlobalCount);
-    }
-    if (currentUserStats) {
-      setUserStats(currentUserStats as UserStats);
-    }
-    if (currentTopStressers) {
-      setTopStressers(currentTopStressers as TopStresser[]);
-    }
-  }, [currentGlobalCount, currentUserStats, currentTopStressers]);
+  // WRITE : wagmi
+  const { writeContract } = useWriteContract();
 
-  const { writeContract, data: hash } = useWriteContract();
-
-  const { isLoading, isSuccess } = useWaitForTransactionReceipt({
-    hash,
-    onSuccess: () => {
-      refetchGlobalCount();
-      refetchUserStats();
-      refetchTopStressers();
-    },
-  });
-
-  const stressChain = async (times: number = 1) => {
+  /**
+   * Appelle la fonction "approveAndExecuteStress(count)" de ton SC,
+   * qui paie et exécute la boucle 'count' fois en une seule transaction.
+   */
+  const approveAndExecuteStress = async (count: number = selectedCount) => {
     if (!isConnected) {
+      // connecte l'utilisateur si pas déjà fait
       connect({ connector: connectors[1] });
       return;
     }
 
     try {
+      setIsLoading(true);
       await checkAndSwitchNetwork();
-      setGlobalStressCount((prev) => prev + BigInt(times));
 
-      if (userStats) {
-        setUserStats((prev) => {
-          if (!prev) {
-            return {
-              stressCount: BigInt(times),
-              lastStressTime: BigInt(Date.now()),
-            };
-          }
+      const approvalAmount = BigInt(count);
 
-          return {
-            ...prev,
-            stressCount: prev.stressCount + BigInt(times),
-          };
-        });
-      }
-
-      const promises = Array(times)
-        .fill(0)
-        .map(() =>
-          writeContract({
-            address: STRESS_CONTRACT_ADDRESS,
-            abi: STRESS_CONTRACT_ABI,
-            functionName: "stress",
-          })
-        );
-
-      await Promise.all(promises);
+      // Transaction : on paie STRESS_COST * count en msg.value
+      await writeContract({
+        address: STRESS_CONTRACT_ADDRESS,
+        abi: STRESS_CONTRACT_ABI,
+        functionName: "approveAndExecuteStress",
+        args: [approvalAmount],
+        value: STRESS_COST * approvalAmount,
+      });
     } catch (e) {
-      setGlobalStressCount((prev) => prev - BigInt(times));
-
-      if (userStats) {
-        setUserStats((prev) => {
-          if (!prev) return null;
-          return {
-            ...prev,
-            stressCount: prev.stressCount - BigInt(times),
-          };
-        });
-      }
-
-      console.error("Stress Error:", e);
-      throw e;
+      console.error("approveAndExecuteStress error:", e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return {
-    stressChain,
+    // Méthode unique
+    approveAndExecuteStress,
+
+    // Données exposées
     globalStressCount: Number(globalStressCount),
-    userStats: userStats
-      ? {
-          stressCount: Number(userStats.stressCount),
-          lastStressTime: Number(userStats.lastStressTime),
-        }
-      : null,
-    topStressers: topStressers.map((stresser) => ({
-      user: stresser.user,
-      count: Number(stresser.count),
-    })),
+    userStats,
+    topStressers,
     isLoading,
-    isSuccess,
+
+    // Sélection du batch
+    selectedCount,
+    setSelectedCount,
   };
 }

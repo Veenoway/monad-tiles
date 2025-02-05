@@ -1,7 +1,12 @@
 export const STRESS_CONTRACT_ADDRESS =
-  "0x5a188d262faDA554420870f20c563Ec0e34dBAF0";
+  "0xCa81A42Bb1B46dBbBf3fA6BB7407ef1086C37000";
 
 export const STRESS_CONTRACT_ABI = [
+  {
+    inputs: [],
+    stateMutability: "nonpayable",
+    type: "constructor",
+  },
   {
     anonymous: false,
     inputs: [
@@ -21,6 +26,18 @@ export const STRESS_CONTRACT_ABI = [
         indexed: false,
         internalType: "uint256",
         name: "newGlobalCount",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "remainingAllowance",
+        type: "uint256",
+      },
+      {
+        indexed: false,
+        internalType: "uint256",
+        name: "approvedStressCount",
         type: "uint256",
       },
     ],
@@ -45,6 +62,32 @@ export const STRESS_CONTRACT_ABI = [
     ],
     name: "TopStressersUpdated",
     type: "event",
+  },
+  {
+    inputs: [],
+    name: "STRESS_COST",
+    outputs: [
+      {
+        internalType: "uint256",
+        name: "",
+        type: "uint256",
+      },
+    ],
+    stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256",
+        name: "count",
+        type: "uint256",
+      },
+    ],
+    name: "approveAndExecuteStress",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
   },
   {
     inputs: [],
@@ -106,6 +149,16 @@ export const STRESS_CONTRACT_ABI = [
             name: "lastStressTime",
             type: "uint256",
           },
+          {
+            internalType: "uint256",
+            name: "remainingAllowance",
+            type: "uint256",
+          },
+          {
+            internalType: "uint256",
+            name: "approvedStressCount",
+            type: "uint256",
+          },
         ],
         internalType: "struct EnhancedStresser.UserStats",
         name: "",
@@ -126,26 +179,6 @@ export const STRESS_CONTRACT_ABI = [
       },
     ],
     stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "minTopScore",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "stress",
-    outputs: [],
-    stateMutability: "nonpayable",
     type: "function",
   },
   {
@@ -192,8 +225,25 @@ export const STRESS_CONTRACT_ABI = [
         name: "lastStressTime",
         type: "uint256",
       },
+      {
+        internalType: "uint256",
+        name: "remainingAllowance",
+        type: "uint256",
+      },
+      {
+        internalType: "uint256",
+        name: "approvedStressCount",
+        type: "uint256",
+      },
     ],
     stateMutability: "view",
+    type: "function",
+  },
+  {
+    inputs: [],
+    name: "withdraw",
+    outputs: [],
+    stateMutability: "nonpayable",
     type: "function",
   },
 ];
