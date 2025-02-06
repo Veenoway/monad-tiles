@@ -15,6 +15,7 @@ import {
   useWriteContract,
 } from "wagmi";
 
+// Types pour la structure du contrat
 type TopStresser = {
   user: string;
   count: bigint;
@@ -27,28 +28,21 @@ type UserStats = {
   approvedStressCount: bigint;
 };
 
+const STRESS_COST = BigInt(16e16);
+const BATCH_SIZE = 10;
+const REQUIRED_CHAIN_ID = 20143;
+
 export function useEnhancedStressTest() {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
-
-  // Remplace si besoin par la bonne chain
-  const REQUIRED_CHAIN_ID = 20143;
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
-
-  // Coût par “stress”
-  const STRESS_COST = BigInt(16e16);
-  // Par défaut, on proposera 10 “stress” si l’utilisateur veut tout payer en une fois
-  const BATCH_SIZE = 10;
-
-  // States
   const [globalStressCount, setGlobalStressCount] = useState<bigint>(BigInt(0));
   const [userStats, setUserStats] = useState<UserStats | null>(null);
   const [topStressers, setTopStressers] = useState<TopStresser[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedCount, setSelectedCount] = useState(BATCH_SIZE);
 
-  // Vérifie la chaîne et switch si besoin
   const checkAndSwitchNetwork = async () => {
     if (chainId !== REQUIRED_CHAIN_ID) {
       try {
@@ -60,7 +54,6 @@ export function useEnhancedStressTest() {
     }
   };
 
-  // READ : Récupère globalStressCount
   const { data: currentGlobalCount, refetch: refetchGlobalCount } =
     useReadContract({
       address: STRESS_CONTRACT_ADDRESS,
@@ -68,7 +61,6 @@ export function useEnhancedStressTest() {
       functionName: "getGlobalStressCount",
     });
 
-  // READ : Récupère les stats utilisateur
   const { data: currentUserStats, refetch: refetchUserStats } = useReadContract(
     {
       address: STRESS_CONTRACT_ADDRESS,
@@ -79,7 +71,6 @@ export function useEnhancedStressTest() {
     }
   );
 
-  // READ : Récupère topStressers
   const { data: currentTopStressers, refetch: refetchTopStressers } =
     useReadContract({
       address: STRESS_CONTRACT_ADDRESS,
@@ -87,7 +78,6 @@ export function useEnhancedStressTest() {
       functionName: "getTopStressers",
     });
 
-  // Met à jour nos states quand les reads changent
   useEffect(() => {
     if (currentGlobalCount) setGlobalStressCount(currentGlobalCount);
     if (currentUserStats) setUserStats(currentUserStats as UserStats);
@@ -95,7 +85,6 @@ export function useEnhancedStressTest() {
       setTopStressers(currentTopStressers as TopStresser[]);
   }, [currentGlobalCount, currentUserStats, currentTopStressers]);
 
-  // Polling : toutes les 2s, on refresh
   useEffect(() => {
     const interval = setInterval(() => {
       refetchGlobalCount();
@@ -105,7 +94,6 @@ export function useEnhancedStressTest() {
     return () => clearInterval(interval);
   }, [refetchGlobalCount, refetchUserStats, refetchTopStressers, address]);
 
-  // Écoute de l'événement StressIncremented
   useWatchContractEvent({
     address: STRESS_CONTRACT_ADDRESS,
     abi: STRESS_CONTRACT_ABI,
@@ -119,10 +107,8 @@ export function useEnhancedStressTest() {
         approvedStressCount,
       } = logs[0].args;
 
-      // On met à jour le global
       setGlobalStressCount(newGlobalCount);
 
-      // Si c’est l’utilisateur courant, on met à jour
       if (user === address) {
         setUserStats((prev) => ({
           ...prev!,
@@ -131,22 +117,14 @@ export function useEnhancedStressTest() {
           approvedStressCount,
         }));
       }
-
-      // Rafraîchir le classement
       refetchTopStressers();
     },
   });
 
-  // WRITE : wagmi
   const { writeContract } = useWriteContract();
 
-  /**
-   * Appelle la fonction "approveAndExecuteStress(count)" de ton SC,
-   * qui paie et exécute la boucle 'count' fois en une seule transaction.
-   */
   const approveAndExecuteStress = async (count: number = selectedCount) => {
     if (!isConnected) {
-      // connecte l'utilisateur si pas déjà fait
       connect({ connector: connectors[1] });
       return;
     }
@@ -157,7 +135,6 @@ export function useEnhancedStressTest() {
 
       const approvalAmount = BigInt(count);
 
-      // Transaction : on paie STRESS_COST * count en msg.value
       await writeContract({
         address: STRESS_CONTRACT_ADDRESS,
         abi: STRESS_CONTRACT_ABI,
@@ -173,16 +150,13 @@ export function useEnhancedStressTest() {
   };
 
   return {
-    // Méthode unique
     approveAndExecuteStress,
 
-    // Données exposées
     globalStressCount: Number(globalStressCount),
     userStats,
     topStressers,
     isLoading,
 
-    // Sélection du batch
     selectedCount,
     setSelectedCount,
   };

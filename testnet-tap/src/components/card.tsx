@@ -30,7 +30,7 @@ export const Card = ({ card, isFlipped, onClick, disabled }: CardProps) => {
     <Tilt
       {...options}
       className={cn(
-        " shadow-2xl border-2 bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)] rounded-xl relative  h-[350px] w-auto",
+        " shadow-2xl border-2 bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)] rounded-xl relative  h-[25vh] w-auto",
         {
           "cursor-pointer hover:scale-105 transition-transform": !disabled,
           "cursor-not-allowed opacity-70": disabled,

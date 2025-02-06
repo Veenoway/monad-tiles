@@ -1,5 +1,5 @@
 export const STRESS_CONTRACT_ADDRESS =
-  "0xCa81A42Bb1B46dBbBf3fA6BB7407ef1086C37000";
+  "0xcfC68c3d1516D17e64475f5cAA1727CCD646F9Bf";
 
 export const STRESS_CONTRACT_ABI = [
   {
@@ -85,6 +85,19 @@ export const STRESS_CONTRACT_ABI = [
       },
     ],
     name: "approveAndExecuteStress",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
+    inputs: [
+      {
+        internalType: "uint256[]",
+        name: "counts",
+        type: "uint256[]",
+      },
+    ],
+    name: "batchApproveAndExecuteStress",
     outputs: [],
     stateMutability: "payable",
     type: "function",

@@ -28,59 +28,30 @@ const shuffleArray = (cards: CardsType[]) => {
 };
 
 export const Home = () => {
-  // ---------------------------------------------------------------------------
-  // HOOK WAGMI + STRESS
-  // ---------------------------------------------------------------------------
   const {
     approveAndExecuteStress,
+    batchApproveAndExecuteStress,
     globalStressCount,
     userStats,
     topStressers,
     isLoading,
+    selectedCount,
+    setSelectedCount,
   } = useEnhancedStressTest();
 
-  // ---------------------------------------------------------------------------
-  // ÉTATS LOCAUX
-  // ---------------------------------------------------------------------------
-  // On mélange les cartes
   const [cards, setCards] = useState<CardsType[]>(() =>
     shuffleArray([...cardsMemory, ...cardsMemory])
   );
 
-  // Session du joueur (hearts, flips, etc.)
   const [userSession, setUserSession] = useState<UserSessionType>({
     ...defaultUserSession,
     flippedCards: [],
   });
 
-  // Compteur de flips prépayés (qu’on ne re-déclenchera pas on-chain)
   const [paidFlips, setPaidFlips] = useState(0);
 
-  // État de la partie
   const [gameStatus, setGameStatus] = useState(GameStatus.PLAYING);
 
-  // Pour l’achat de flips “custom”
-  const [selectedCount, setSelectedCount] = useState(10);
-
-  // ---------------------------------------------------------------------------
-  // BOUTON : BUY X FLIPS (transaction unique)
-  // ---------------------------------------------------------------------------
-  const handleBuyFlips = async (count: number) => {
-    try {
-      // 1) On appelle la fonction du smart contract (=> pop-up)
-      //    Ça incrémente déjà globalStressCount de 'count' tout de suite
-      await approveAndExecuteStress(count);
-
-      // 2) On ajoute 'count' aux flips prépayés locaux
-      setPaidFlips((prev) => prev + count);
-    } catch (err) {
-      console.error("handleBuyFlips error:", err);
-    }
-  };
-
-  // ---------------------------------------------------------------------------
-  // CLIC SUR UNE CARTE
-  // ---------------------------------------------------------------------------
   const handleCardClick = async (index: number, card: CardsType) => {
     if (
       gameStatus === GameStatus.WAITING ||
@@ -93,7 +64,6 @@ export const Home = () => {
     }
 
     try {
-      // 1) Logique front (flip local)
       const newFlippedCards = [...userSession.flippedCards, index];
       setUserSession((prev) => ({
         ...prev,
@@ -102,16 +72,12 @@ export const Home = () => {
         prevGuess: newFlippedCards.length === 2 ? prev.guess : prev.prevGuess,
       }));
 
-      // 2) Vérifie si on a un flip “prépayé”
       if (paidFlips > 0) {
-        // => Pas de transaction => on décrémente localement
         setPaidFlips((prev) => prev - 1);
       } else {
-        // => Sinon, transaction “1 par clic”
         await approveAndExecuteStress(1);
       }
 
-      // 3) Si on a 2 cartes retournées, on compare
       if (newFlippedCards.length === 2) {
         setGameStatus(GameStatus.WAITING);
         setTimeout(() => {
@@ -119,7 +85,6 @@ export const Home = () => {
           const secondCard = cards[newFlippedCards[1]];
 
           if (firstCard.src === secondCard.src) {
-            // Succès
             setUserSession((prev) => ({
               ...prev,
               totalSuccess: prev.totalSuccess + 1,
@@ -127,7 +92,6 @@ export const Home = () => {
               flippedCards: [],
             }));
           } else {
-            // Échec
             setUserSession((prev) => ({
               ...prev,
               hearts: prev.hearts - 1,
@@ -143,9 +107,6 @@ export const Home = () => {
     }
   };
 
-  // ---------------------------------------------------------------------------
-  // CHECK FIN DE PARTIE
-  // ---------------------------------------------------------------------------
   useEffect(() => {
     if (userSession.hearts === 0) {
       setGameStatus(GameStatus.LOSE);
@@ -154,38 +115,25 @@ export const Home = () => {
     }
   }, [userSession.hearts, userSession.successCard.length]);
 
-  // ---------------------------------------------------------------------------
-  // RESET GAME
-  // ---------------------------------------------------------------------------
   const resetGame = () => {
     setCards(shuffleArray([...cardsMemory, ...cardsMemory]));
     setUserSession({ ...defaultUserSession, flippedCards: [] });
     setGameStatus(GameStatus.PLAYING);
-    // Note : paidFlips n’est pas remis à zéro ici, à toi de décider si tu veux le reset
   };
 
-  // ---------------------------------------------------------------------------
-  // RENDER
-  // ---------------------------------------------------------------------------
   return (
     <main
       className="w-screen min-h-screen pb-[100px] font-montserrat"
       style={{
-        backgroundImage: `url('/background/orderly-gradient.png')`,
+        backgroundImage: `url('/background/imp-bg.png')`,
         backgroundSize: "cover",
+        backgroundPosition: "center",
         backgroundRepeat: "no-repeat",
-        backgroundBlendMode: "overlay",
       }}
     >
-      <h1 className="w-fit text-5xl text-white font-montserrat font-bold pl-[2.5%] pt-[50px]">
-        MEMORY GAME: STRESS MONAD
-      </h1>
-
-      <div className="w-[95%] mx-auto mt-10 flex gap-8">
-        {/* PARTIE GAUCHE : Jeu */}
+      <div className="w-[95%] mx-auto pt-10 flex gap-8">
         <div className="w-3/4">
           <div className="flex items-center justify-between mb-5">
-            {/* Score & Hearts */}
             <div className="flex flex-col text-red-600 mb-6 gap-2">
               <p className="text-3xl text-white">
                 Score: {userSession.successCard.length}/{cardsMemory.length}
@@ -199,48 +147,15 @@ export const Home = () => {
               </div>
             </div>
 
-            {/* BOUTONS */}
             <div className="flex flex-col gap-2">
-              {/* Nouveau jeu */}
               <button
                 className="bg-[#836EF9] px-4 h-[50px] rounded-xl text-white text-xl font-medium"
                 onClick={resetGame}
               >
                 New Game
               </button>
-
-              {/* Acheter 10 flips d’un coup */}
-              <button
-                className="bg-[#836EF9] px-4 h-[50px] rounded-xl text-white text-xl font-medium"
-                onClick={() => handleBuyFlips(10)}
-                disabled={isLoading}
-              >
-                Buy 10 flips
-              </button>
-              <p className="text-white">Paid flips: {paidFlips}</p>
-
-              {/* Optionnel : acheter un nombre custom */}
-              <div className="flex items-center gap-2 mt-4">
-                <input
-                  type="number"
-                  value={selectedCount}
-                  onChange={(e) =>
-                    setSelectedCount(Math.max(1, parseInt(e.target.value) || 1))
-                  }
-                  className="w-[70px] px-4 py-2 rounded-xl bg-white/10 text-white"
-                  placeholder="Count"
-                />
-                <button
-                  onClick={() => handleBuyFlips(selectedCount)}
-                  disabled={isLoading}
-                  className="bg-[#836EF9] px-4 h-[50px] rounded-xl text-white text-xl font-medium"
-                >
-                  Buy {selectedCount}
-                </button>
-              </div>
             </div>
 
-            {/* Stats utilisateur */}
             <div className="flex flex-col items-end">
               {userStats && (
                 <div className="text-white">
@@ -260,7 +175,6 @@ export const Home = () => {
             </div>
           </div>
 
-          {/* Plateau de cartes */}
           <div className="relative">
             {(gameStatus === GameStatus.SUCCESS ||
               gameStatus === GameStatus.LOSE) && (
@@ -302,8 +216,6 @@ export const Home = () => {
             </div>
           </div>
         </div>
-
-        {/* PARTIE DROITE : TOP STRESSERS */}
         <div className="w-1/4 bg-black/20 backdrop-blur-sm p-6 rounded-2xl h-fit ml-5">
           <div className="rounded-lg">
             <div className="flex items-center justify-between pb-3 border-b border-[rgba(255,255,255,0.1)]">
@@ -313,28 +225,37 @@ export const Home = () => {
               </p>
             </div>
             <div className="flex flex-col">
-              {topStressers?.map((stresser, index) => (
-                <div
-                  key={`${stresser.user}-${index}`}
-                  className="flex justify-between border-b border-[rgba(255,255,255,0.1)] py-2"
-                >
-                  <span
-                    className={`font-bold text-base ${
-                      index < 3 ? "text-[#836EF9]" : "text-white"
-                    }`}
-                  >
-                    <span>#{index + 1}</span> {stresser.user.slice(0, 6)}...
-                    {stresser.user.slice(-4)}
-                  </span>
-                  <span
-                    className={`font-bold text-base ${
-                      index < 3 ? "text-[#836EF9]" : "text-white"
-                    }`}
-                  >
-                    {stresser.count.toString()}
-                  </span>
-                </div>
-              ))}
+              <table>
+                <thead>
+                  <tr>
+                    <th className="pl-3 py-2 text-start">Rank</th>
+                    <th className="px-3 py-2 text-start">Address</th>
+                    <th className="px-3 py-2 text-end">Stress</th>
+                    <th className="pr-3 py-2 text-end">W/L Ratio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topStressers?.map((stresser, index) => (
+                    <tr
+                      key={`${stresser.user}-${index}`}
+                      className={`text-white font-semibold ${
+                        index % 2 === 0 ? "bg-[rgba(255,255,255,0.1)]" : ""
+                      }`}
+                    >
+                      <td className="pl-3 py-2 text-start">#{index + 1}</td>
+                      <td className="px-3 text-start">
+                        {stresser.user.slice(0, 6)}...
+                        {stresser.user.slice(-4)}
+                      </td>
+                      <td className="px-3 text-end">
+                        {" "}
+                        {stresser.count.toString()}
+                      </td>
+                      <td className="pr-3 text-end">1.64</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
