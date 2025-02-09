@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "@/components/card";
+import PianoTilesGame from "@/components/music";
 import { useEnhancedStressTest } from "@/hook/useStress";
 import { useEffect, useState } from "react";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
@@ -146,7 +147,6 @@ export const Home = () => {
                 ))}
               </div>
             </div>
-
             <div className="flex flex-col gap-2">
               <button
                 className="bg-[#836EF9] px-4 h-[50px] rounded-xl text-white text-xl font-medium"
@@ -155,7 +155,6 @@ export const Home = () => {
                 New Game
               </button>
             </div>
-
             <div className="flex flex-col items-end">
               {userStats && (
                 <div className="text-white">
@@ -174,7 +173,7 @@ export const Home = () => {
               )}
             </div>
           </div>
-
+          <PianoTilesGame />
           <div className="relative">
             {(gameStatus === GameStatus.SUCCESS ||
               gameStatus === GameStatus.LOSE) && (
