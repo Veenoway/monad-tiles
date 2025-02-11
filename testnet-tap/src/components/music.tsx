@@ -5,8 +5,6 @@ import { useEffect, useRef, useState } from "react";
 import { GoMute, GoUnmute } from "react-icons/go";
 import { useAccount } from "wagmi";
 
-// Transcription simplifiée pour "Bloody Tears in Synthesia"
-// (À partir de 0:32 de la vidéo, en boucle)
 const melody = [
   // Section 1: Intro
   "F#4",
@@ -79,6 +77,8 @@ const bonusBgs = [
   "/bg/thisisfin.jpg",
   "/bg/john.jpg",
   "/bg/fitz.jpg",
+  "/bg/gizmo.jpg",
+  "/bg/king.jpg",
 ];
 
 const bonusImages = [
@@ -92,7 +92,37 @@ const bonusImages = [
   "/bonus/pfp-thisisfin.png",
   "/bonus/pfp-john.png",
   "/bonus/pfp-fitz.png",
+  "/bonus/pfp-gizmo.png",
+  "/bonus/pfp-king.png",
+  //   "/bonus/pfp-danny.png",
 ];
+
+const bonusSongs = [
+  "/sound/Bill.mp3",
+  "/sound/poort.ogg",
+  "/sound/Eunice.mp3",
+  "/sound/tunez4.mp3",
+  "/sound/mike.mp3",
+  "/sound/keone.mp3",
+  "/sound/sailornini.mp3",
+  "/sound/thisisfin.mp3",
+  "/sound/john.mp3",
+  "/sound/fitz.mp3",
+  "/sound/gizmo.mp3",
+  "/sound/king.mp3",
+  //   "/bonus/danny.mp3",
+];
+
+const bgMusics = [
+  "/bloody-tears.mp3",
+  "/sound/undertale.mp3",
+  "/sound/route.mp3",
+  "/sound/sasageyo.mp3",
+];
+
+const menuBgMusic = "/sound/route.mp3";
+const gameOverBgMusics = ["/sound/tapion.mp3"];
+const gameOverSound = "/sound/haha.mp3";
 
 const PianoTilesGame = () => {
   const containerHeight = 600;
@@ -101,43 +131,120 @@ const PianoTilesGame = () => {
   const updateInterval = 30;
   const computedInitialSpeed =
     (containerHeight + rowHeight) / (2000 / updateInterval);
-
   const [rows, setRows] = useState([]);
   const [score, setScore] = useState(0);
-  const [missedCount, setMissedCount] = useState(0);
+  const [lives, setLives] = useState(10);
   const [isPlaying, setIsPlaying] = useState(false);
   const [gameOver, setGameOver] = useState(false);
   const [tileSpeed, setTileSpeed] = useState(computedInitialSpeed);
   const [spawnInterval, setSpawnInterval] = useState(600);
   const [feedbacks, setFeedbacks] = useState([]);
+  const [isMuted, setIsMuted] = useState(false);
+  const [bgMusicIndex, setBgMusicIndex] = useState(0);
+  const [bgVolume, setBgVolume] = useState(0.3);
+  const [sfxVolume, setSfxVolume] = useState(0.3);
+  const [showSettings, setShowSettings] = useState(false);
 
   const animTimerRef = useRef(null);
   const spawnTimerRef = useRef(null);
   const accelTimerRef = useRef(null);
-
   const audioRef = useRef(null);
+  const bonusAudioRefs = useRef([]);
   const bgMusicRef = useRef(null);
+  const menuBgMusicRef = useRef(null);
+  const gameOverBgMusicRef = useRef(null);
 
   const spawnIndexRef = useRef(0);
   const bgIndexRef = useRef(0);
   const bonusBgIndexRef = useRef(0);
   const normalTileCountRef = useRef(0);
+  const bonusSongIndexRef = useRef(0);
 
-  const [bonusFeedbackIndex, setBonusFeedbackIndex] = useState(0);
+  const [clickedTile, setClickedTile] = useState(null);
 
   const { address } = useAccount();
   const { click, submitScore } = usePianoRelay();
 
-  // Préchargement du son de clic
+  const toggleMute = () => {
+    setIsMuted((prev) => !prev);
+  };
+
   useEffect(() => {
     audioRef.current = new Audio("/bloop-1.mp3");
+    bonusAudioRefs.current = bonusSongs.map((song) => new Audio(song));
   }, []);
 
-  // Préchargement de la musique de fond
   useEffect(() => {
-    // bgMusicRef.current = new Audio("/bloody-tears.mp3");
-    // bgMusicRef.current.loop = true;
-  }, []);
+    if (bgMusicRef.current) bgMusicRef.current.volume = isMuted ? 0 : bgVolume;
+    if (menuBgMusicRef.current)
+      menuBgMusicRef.current.volume = isMuted ? 0 : bgVolume;
+    if (gameOverBgMusicRef.current)
+      gameOverBgMusicRef.current.volume = isMuted ? 0 : bgVolume;
+    if (audioRef.current) audioRef.current.volume = isMuted ? 0 : sfxVolume;
+    if (bonusAudioRefs.current.length > 0) {
+      bonusAudioRefs.current.forEach((audio) => {
+        audio.volume = isMuted ? 0 : 1;
+      });
+    }
+  }, [isMuted, bgVolume, sfxVolume]);
+
+  useEffect(() => {
+    if (bgMusicRef.current) bgMusicRef.current.pause();
+    bgMusicRef.current = new Audio(bgMusics[bgMusicIndex]);
+    bgMusicRef.current.loop = true;
+    bgMusicRef.current.volume = isMuted ? 0 : bgVolume;
+    if (isPlaying) {
+      bgMusicRef.current
+        .play()
+        .catch((err) => console.log("Erreur musique de fond:", err));
+    }
+  }, [bgMusicIndex, isPlaying, isMuted, bgVolume]);
+
+  useEffect(() => {
+    if (!isPlaying && !gameOver) {
+      console.log("Menu BG Music should play automatically");
+      if (menuBgMusicRef.current) menuBgMusicRef.current.pause();
+      menuBgMusicRef.current = new Audio(menuBgMusic);
+      menuBgMusicRef.current.loop = true;
+      menuBgMusicRef.current.volume = isMuted ? 0 : bgVolume;
+      menuBgMusicRef.current.muted = true;
+      menuBgMusicRef.current
+        .play()
+        .then(() => {
+          setTimeout(() => {
+            menuBgMusicRef.current.muted = false;
+          }, 500);
+        })
+        .catch((err) => console.log("Erreur musique menu:", err));
+    } else {
+      if (menuBgMusicRef.current) {
+        menuBgMusicRef.current.pause();
+        menuBgMusicRef.current.currentTime = 0;
+      }
+    }
+  }, [isPlaying, gameOver, isMuted, bgVolume]);
+
+  useEffect(() => {
+    if (gameOver) {
+      if (gameOverBgMusicRef.current) gameOverBgMusicRef.current.pause();
+      gameOverBgMusicRef.current = new Audio(gameOverBgMusics[0]);
+      gameOverBgMusicRef.current.loop = true;
+      gameOverBgMusicRef.current.volume = isMuted ? 0 : bgVolume;
+      gameOverBgMusicRef.current
+        .play()
+        .catch((err) => console.log("Erreur musique Game Over:", err));
+      const goSound = new Audio(gameOverSound);
+      goSound.volume = isMuted ? 0 : 1;
+      goSound
+        .play()
+        .catch((err) => console.log("Erreur Game Over sound:", err));
+    } else {
+      if (gameOverBgMusicRef.current) {
+        gameOverBgMusicRef.current.pause();
+        gameOverBgMusicRef.current.currentTime = 0;
+      }
+    }
+  }, [gameOver, isMuted, bgVolume]);
 
   useEffect(() => {
     [...bonusBgs, ...bonusImages].forEach((src) => {
@@ -148,7 +255,6 @@ const PianoTilesGame = () => {
 
   useEffect(() => {
     rows.forEach((tile) => {
-      console.log("tile", tile.background);
       const img = new window.Image();
       img.src = tile.background;
     });
@@ -162,18 +268,17 @@ const PianoTilesGame = () => {
     });
   }, []);
 
-  // Lecture/arrêt de la musique de fond
   useEffect(() => {
-    // if (isPlaying) {
-    //   bgMusicRef.current
-    //     .play()
-    //     .catch((err) => console.log("Erreur musique:", err));
-    // } else {
-    //   if (bgMusicRef.current) {
-    //     bgMusicRef.current.pause();
-    //     bgMusicRef.current.currentTime = 0;
-    //   }
-    // }
+    if (isPlaying) {
+      bgMusicRef.current
+        .play()
+        .catch((err) => console.log("Erreur musique de fond:", err));
+    } else {
+      if (bgMusicRef.current) {
+        bgMusicRef.current.pause();
+        bgMusicRef.current.currentTime = 0;
+      }
+    }
   }, [isPlaying]);
 
   const handlePlayerClick = async () => {
@@ -195,7 +300,7 @@ const PianoTilesGame = () => {
     clearInterval(accelTimerRef.current);
     setRows([]);
     setScore(0);
-    setMissedCount(0);
+    setLives(10);
     setGameOver(false);
     setTileSpeed(computedInitialSpeed);
     setSpawnInterval(600);
@@ -203,8 +308,13 @@ const PianoTilesGame = () => {
     bgIndexRef.current = 0;
     bonusBgIndexRef.current = 0;
     normalTileCountRef.current = 0;
-    setBonusFeedbackIndex(0);
+    bonusSongIndexRef.current = 0;
+    setClickedTile(null);
     setIsPlaying(true);
+    if (menuBgMusicRef.current) {
+      menuBgMusicRef.current.pause();
+      menuBgMusicRef.current.currentTime = 0;
+    }
   };
 
   const endGame = async (message) => {
@@ -233,14 +343,15 @@ const PianoTilesGame = () => {
         if (missIncrement > 0) {
           for (let i = 0; i < missIncrement; i++) {
             addFeedback("-1", "#FF0000");
+            setLives((prevLives) => {
+              const newLives = prevLives - 1;
+              if (newLives <= 0) {
+                endGame("Game Over ! Vous avez perdu toutes vos vies.");
+                return 0;
+              }
+              return newLives;
+            });
           }
-          setMissedCount((prev) => {
-            const newCount = prev + missIncrement;
-            if (newCount >= 10) {
-              endGame("Game Over ! Vous avez raté 10 tuiles.");
-            }
-            return newCount;
-          });
         }
         return updatedRows;
       });
@@ -300,7 +411,8 @@ const PianoTilesGame = () => {
     return () => clearInterval(accelTimerRef.current);
   }, [isPlaying]);
 
-  const handleClick = (colIndex) => {
+  const handleClick = (e, colIndex) => {
+    e.stopPropagation();
     setRows((prevRows) => {
       const tolerance = 30;
       const hitZoneStart = containerHeight - rowHeight - tolerance;
@@ -309,31 +421,118 @@ const PianoTilesGame = () => {
         (tile) =>
           tile.blackColumn === colIndex &&
           tile.top >= hitZoneStart &&
-          tile.top <= hitZoneEnd
+          tile.top <= hitZoneEnd &&
+          !tile.processed
       );
       if (tileIndex !== -1) {
         const tile = prevRows[tileIndex];
-        if (audioRef.current) {
-          audioRef.current.currentTime = 0;
-          audioRef.current.play();
-        }
-        if (address) {
-          handlePlayerClick();
-        }
-        const scoreToAdd = tile.isBonus ? 4 : 1;
-        if (tile.isBonus) {
-          const bonusFeedbackBg = bonusImages[tile.bonusIndex];
-          addFeedback(`+${scoreToAdd}`, "#FFF", bonusFeedbackBg);
-        } else {
-          addFeedback(scoreToAdd > 1 ? `+${scoreToAdd}` : "+1", "#FFF");
-        }
-        setScore((prev) => prev + scoreToAdd);
+        const newTile = { ...tile, processed: true };
         const newRows = [...prevRows];
         newRows.splice(tileIndex, 1);
+        setClickedTile(newTile);
         return newRows;
       }
       return prevRows;
     });
+  };
+
+  useEffect(() => {
+    if (clickedTile) {
+      if (clickedTile.isBonus) {
+        const bonusAudio = bonusAudioRefs.current[clickedTile.bonusIndex];
+        bonusAudio.currentTime = 0;
+        bonusAudio.play();
+        if (clickedTile.bonusIndex === 2 || clickedTile.bonusIndex === 6) {
+          setLives((prev) => prev + 1);
+          addFeedback("+1 Life", "#00FF00");
+        }
+      } else {
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current.play();
+        }
+      }
+      if (address) {
+        handlePlayerClick();
+      }
+      const scoreToAdd = clickedTile.isBonus ? 4 : 1;
+      if (clickedTile.isBonus) {
+        const bonusFeedbackBg = bonusImages[clickedTile.bonusIndex];
+        addFeedback(`+${scoreToAdd}`, "#FFF", bonusFeedbackBg);
+      } else {
+        addFeedback(scoreToAdd > 1 ? `+${scoreToAdd}` : "+1", "#FFF");
+      }
+      setScore((prev) => prev + scoreToAdd);
+      setClickedTile(null);
+    }
+  }, [clickedTile]);
+
+  const renderSettings = () => {
+    return (
+      <div className="absolute z-[11000] inset-0 bg-[rgba(11,4,51,0.95)] flex flex-col items-center justify-center p-4">
+        <h2 className="text-3xl text-white font-bold uppercase italic mb-6">
+          Settings
+        </h2>
+        <div className="mb-4 flex flex-col w-full">
+          <label className="text-white text-2xl mb-4 text-start ml-[5%]">
+            Gameplay BG Music:
+          </label>
+          <div className="grid grid-cols-2 w-[90%] mx-auto gap-3">
+            {bgMusics.map((music, index) => (
+              <button
+                key={index}
+                onClick={() => setBgMusicIndex(Number(index))}
+                className={`col-span-1 uppercase rounded-xl h-[40px] text-xl ${
+                  bgMusicIndex === index
+                    ? "border-2 border-double border-transparent bg-[#a1055c]"
+                    : "border-2 border-double border-[#a1055c]"
+                }`}
+              >
+                {music?.includes("/sound/")
+                  ? music?.split("/sound/")[1]?.split(".mp3")?.[0]
+                  : music?.split("/")[1]?.split(".mp3")?.[0]}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mb-2 flex flex-col w-full mt-6">
+          <label className="text-white text-2xl mb-2 text-start ml-[5%]">
+            BG Music Volume:
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={bgVolume}
+            onChange={(e) => setBgVolume(Number(e.target.value))}
+            className="w-[90%] mx-auto"
+          />
+          <span className="text-white ml-2">{bgVolume}</span>
+        </div>
+        <div className="mb-4 flex flex-col w-full">
+          <label className="text-white text-2xl mb-2 text-start ml-[5%]">
+            SFX Volume:
+          </label>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.05"
+            value={sfxVolume}
+            onChange={(e) => setSfxVolume(Number(e.target.value))}
+            className="w-[90%] mx-auto"
+          />
+          <span className="text-white ml-2">{sfxVolume}</span>
+        </div>
+        <button
+          onClick={() => setShowSettings(false)}
+          className="mt-4 px-4 py-2 uppercase text-2xl hover:scale-95 transition-all duration-200 ease-in-out bg-[#a1055c] text-white rounded-md"
+        >
+          Save & Close
+        </button>
+      </div>
+    );
   };
 
   return (
@@ -346,6 +545,7 @@ const PianoTilesGame = () => {
         fontFamily: "Boogaloo",
       }}
     >
+      {showSettings && renderSettings()}
       {!isPlaying && !gameOver && (
         <div className="absolute z-50 inset-0 py-10 flex flex-col items-center bg-[url('/bg/main-bg.jpg')] bg-bottom">
           <Image
@@ -390,16 +590,20 @@ const PianoTilesGame = () => {
               </div>
             </Link>
           </div>
-
           <button
             onClick={startGame}
-            className="font-bold uppercase text-3xl mt-[120px] bg-[#a1055c] rounded-md text-white px-4 py-2  hover:scale-95 transition-all duration-200 ease-in-out"
+            className="font-bold uppercase text-3xl mt-[120px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out"
           >
             Start
           </button>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="mt-4 px-3 py-1.5 bg-[#a1055c] text-lg uppercase text-white rounded-md"
+          >
+            Settings
+          </button>
         </div>
       )}
-      {/* Écran de Game Over distinct */}
       {gameOver && (
         <div className="absolute z-50 inset-0 flex flex-col items-center pt-[60px] bg-[rgba(11,4,51,0.9)]">
           <Image
@@ -409,29 +613,28 @@ const PianoTilesGame = () => {
             height={120}
             unoptimized
           />
-          <div className="flex flex-col justify-center items-center mt-10">
+          <div className="flex flex-col justify-center items-center mt-[60px]">
             <p className="text-xl text-white mb-0 leading-[18px] uppercase">
               Your score
             </p>
-            <p className="text-5xl text-cyan-300 mt-2 font-bold">{score}</p>
+            <p className="text-6xl text-cyan-300 mt-2 font-bold">{score}</p>
           </div>
-
           <button
             onClick={startGame}
-            className="font-bold uppercase text-3xl mt-[50px] bg-[#a1055c] rounded-md text-white px-4 py-2"
+            className="font-bold uppercase text-3xl mt-[70px] bg-[#a1055c] rounded-md text-white px-4 py-2"
           >
             Replay
           </button>
-          <div className="flex flex-col justify-center items-center mt-[80px]">
-            <p className="text-lg text-white mb-0 leading-[18px] uppercase">
-              Your best score
-            </p>
-            <p className="text-3xl text-cyan-300 mt-2 font-bold">{score}</p>
-          </div>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="mt-4 px-4 py-2 bg-[#a1055c] uppercase text-xl text-white rounded-md"
+          >
+            Settings
+          </button>
         </div>
       )}
       <div className="w-full justify-between flex items-center bg-[#190e59] py-5 px-5 relative">
-        <div className="flex flex-col justify-center items-center">
+        <div className="flex flex-col items-center">
           <p className="text-lg text-cyan-300 mb-0 leading-[18px]">
             Best Score
           </p>
@@ -444,10 +647,22 @@ const PianoTilesGame = () => {
           width={150}
           height={130}
         />
-        <div className="text-2xl bg-[rgba(255,255,255,0.1)] z-40 rounded-md p-2">
-          {true ? <GoMute /> : <GoUnmute />}{" "}
+        <div className="flex items-center space-x-2 ml-auto">
+          <div
+            className="text-2xl bg-[rgba(255,255,255,0.1)] rounded-md p-2 cursor-pointer"
+            onClick={toggleMute}
+          >
+            {isMuted ? <GoMute /> : <GoUnmute />}
+          </div>
         </div>
         <div className="">
+          <div className="flex flex-col left-2 bottom-[-210px] h-[200px] gap-1 items-start absolute z-30 max-w-[20px] flex-wrap">
+            {Array.from({ length: lives }).map((_, i) => (
+              <span key={i} className="text-lg ml-1">
+                <img className="" src="/logo/life.png" alt="life logo" />
+              </span>
+            ))}
+          </div>
           <div className="bg-[#190e59] h-[30px] w-[120px] left-1/2 -translate-x-1/2 bottom-[-30px] absolute z-30 rounded-b-[10px] text-white text-base uppercase">
             Score
           </div>
@@ -503,7 +718,6 @@ const PianoTilesGame = () => {
             {fb.message}
           </div>
         ))}
-
         <div
           className="border-t border-dashed border-[rgba(255,255,255,0.4)] bg-[#836EF9] bg-opacity-20"
           style={{
@@ -516,10 +730,9 @@ const PianoTilesGame = () => {
             zIndex: 5,
           }}
         ></div>
-
         {rows.map((tile, i) => (
           <img
-            alt="dede"
+            alt="tile"
             key={i + tile.background}
             src={tile.background || "/cards/versoo.jpg"}
             style={{
@@ -534,12 +747,11 @@ const PianoTilesGame = () => {
             }}
           />
         ))}
-
         {[...Array(columns)].map((_, colIndex) => (
           <div
             key={colIndex}
-            onClick={() => handleClick(colIndex)}
-            className={`border border-[rgba(255,255,255,0.1)]`}
+            onClick={(e) => handleClick(e, colIndex)}
+            className="border border-[rgba(255,255,255,0.1)]"
             style={{
               position: "absolute",
               top: 0,
