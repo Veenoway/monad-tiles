@@ -19,7 +19,6 @@ if (!RELAYER_PRIVATE_KEY || !RPC_URL || !PIANO_CONTRACT_ADDRESS) {
 
 const transport = http(RPC_URL);
 
-/* --- Gestion du nonce et de la file d'attente --- */
 let currentNonce: number | null = null;
 
 interface QueueItem {
@@ -27,7 +26,7 @@ interface QueueItem {
   action: string;
   score?: number;
   resolve: (txHash: string) => void;
-  reject: (error: any) => void;
+  reject: (error: { message: string }) => void;
 }
 
 const transactionQueue: QueueItem[] = [];
@@ -58,10 +57,10 @@ async function processTransaction(
 
   if (currentNonce === null) {
     const nonceHex = await walletClient.request({
-      method: "eth_getTransactionCount",
+      method: "eth_getTransactionCount" as never,
       params: [account.address, "latest"],
     });
-    currentNonce = parseInt(nonceHex, 16);
+    currentNonce = parseInt(String(nonceHex), 16);
   }
   const txOptions = { nonce: currentNonce };
   currentNonce++;
@@ -100,7 +99,7 @@ async function processQueue() {
       );
       item.resolve(txHash);
     } catch (error) {
-      item.reject(error);
+      item.reject(error as unknown as never);
     }
   }
   processing = false;

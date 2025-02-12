@@ -1,11 +1,24 @@
 import { usePianoRelay } from "@/hook/usePianoTiles";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { GoMute, GoUnmute } from "react-icons/go";
 import { useAccount } from "wagmi";
 
-const melody = [
+// Interface pour typer une tuile du jeu
+interface Tile {
+  id: number;
+  top: number;
+  blackColumn: number;
+  note: string;
+  isBonus: boolean;
+  background: string;
+  bonusIndex: number | null;
+  processed?: boolean;
+}
+
+// Définition des tableaux de chaînes
+const melody: string[] = [
   // Section 1: Intro
   "F#4",
   "G#4",
@@ -59,14 +72,14 @@ const melody = [
   "G#4",
 ];
 
-const bgs = [
+const bgs: string[] = [
   "/background/1.jpg",
   "/background/2.jpg",
   "/background/3.jpg",
   "/background/4.jpg",
 ];
 
-const bonusBgs = [
+const bonusBgs: string[] = [
   "/bg/bill.jpg",
   "/bg/port.gif",
   "/bg/eunice.jpg",
@@ -81,23 +94,22 @@ const bonusBgs = [
   "/bg/king.jpg",
 ];
 
-const bonusImages = [
+const bonusImages: string[] = [
   "/bonus/pfp-bill.png",
   "/bonus/pfp-port.png",
-  "/bonus/pfp-eunice.png",
+  "/bonus/pfp-eunice.png", // index 2 : eunice
   "/bonus/pfp-tunez.png",
   "/bonus/pfp-mike.png",
   "/bonus/pfp-keone.png",
-  "/bonus/pfp-sailornini.png",
+  "/bonus/pfp-sailornini.png", // index 6 : sailornini
   "/bonus/pfp-thisisfin.png",
   "/bonus/pfp-john.png",
   "/bonus/pfp-fitz.png",
   "/bonus/pfp-gizmo.png",
   "/bonus/pfp-king.png",
-  //   "/bonus/pfp-danny.png",
 ];
 
-const bonusSongs = [
+const bonusSongs: string[] = [
   "/sound/Bill.mp3",
   "/sound/poort.ogg",
   "/sound/Eunice.mp3",
@@ -109,58 +121,61 @@ const bonusSongs = [
   "/sound/john.mp3",
   "/sound/fitz.mp3",
   "/sound/gizmo.mp3",
-  "/sound/king.mp3",
-  //   "/bonus/danny.mp3",
+  "/sound/fitz.mp3",
 ];
 
-const bgMusics = [
+const bgMusics: string[] = [
   "/bloody-tears.mp3",
   "/sound/undertale.mp3",
   "/sound/route.mp3",
   "/sound/sasageyo.mp3",
 ];
 
-const menuBgMusic = "/sound/route.mp3";
-const gameOverBgMusics = ["/sound/tapion.mp3"];
-const gameOverSound = "/sound/haha.mp3";
+const menuBgMusic: string = "/sound/route.mp3";
+const gameOverBgMusics: string[] = ["/sound/tapion.mp3"];
+const gameOverSound: string = "/sound/haha.mp3";
 
-const PianoTilesGame = () => {
+const PianoTilesGame: React.FC = () => {
   const containerHeight = 600;
   const rowHeight = 150;
   const columns = 4;
   const updateInterval = 30;
   const computedInitialSpeed =
     (containerHeight + rowHeight) / (2000 / updateInterval);
-  const [rows, setRows] = useState([]);
-  const [score, setScore] = useState(0);
-  const [lives, setLives] = useState(10);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [gameOver, setGameOver] = useState(false);
-  const [tileSpeed, setTileSpeed] = useState(computedInitialSpeed);
-  const [spawnInterval, setSpawnInterval] = useState(600);
-  const [feedbacks, setFeedbacks] = useState([]);
-  const [isMuted, setIsMuted] = useState(false);
-  const [bgMusicIndex, setBgMusicIndex] = useState(0);
-  const [bgVolume, setBgVolume] = useState(0.3);
-  const [sfxVolume, setSfxVolume] = useState(0.3);
-  const [showSettings, setShowSettings] = useState(false);
 
-  const animTimerRef = useRef(null);
-  const spawnTimerRef = useRef(null);
-  const accelTimerRef = useRef(null);
-  const audioRef = useRef(null);
-  const bonusAudioRefs = useRef([]);
-  const bgMusicRef = useRef(null);
-  const menuBgMusicRef = useRef(null);
-  const gameOverBgMusicRef = useRef(null);
+  // États de jeu
+  const [rows, setRows] = useState<Tile[]>([]);
+  const [score, setScore] = useState<number>(0);
+  const [lives, setLives] = useState<number>(10);
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [gameOver, setGameOver] = useState<boolean>(false);
+  const [tileSpeed, setTileSpeed] = useState<number>(computedInitialSpeed);
+  const [spawnInterval, setSpawnInterval] = useState<number>(600);
+  const [feedbacks, setFeedbacks] = useState<
+    { id: number; message: string; color: string; bgImage: string | null }[]
+  >([]);
+  const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [bgMusicIndex, setBgMusicIndex] = useState<number>(0);
+  const [bgVolume, setBgVolume] = useState<number>(0.3);
+  const [sfxVolume, setSfxVolume] = useState<number>(0.3);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
 
-  const spawnIndexRef = useRef(0);
-  const bgIndexRef = useRef(0);
-  const bonusBgIndexRef = useRef(0);
-  const normalTileCountRef = useRef(0);
-  const bonusSongIndexRef = useRef(0);
+  const animTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const spawnTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const accelTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const bonusAudioRefs = useRef<HTMLAudioElement[]>([]);
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
+  const menuBgMusicRef = useRef<HTMLAudioElement | null>(null);
+  const gameOverBgMusicRef = useRef<HTMLAudioElement | null>(null);
 
-  const [clickedTile, setClickedTile] = useState(null);
+  const spawnIndexRef = useRef<number>(0);
+  const bgIndexRef = useRef<number>(0);
+  const bonusBgIndexRef = useRef<number>(0);
+  const normalTileCountRef = useRef<number>(0);
+  const bonusSongIndexRef = useRef<number>(0);
+
+  const [clickedTile, setClickedTile] = useState<Tile | null>(null);
 
   const { address } = useAccount();
   const { click, submitScore } = usePianoRelay();
@@ -181,11 +196,9 @@ const PianoTilesGame = () => {
     if (gameOverBgMusicRef.current)
       gameOverBgMusicRef.current.volume = isMuted ? 0 : bgVolume;
     if (audioRef.current) audioRef.current.volume = isMuted ? 0 : sfxVolume;
-    if (bonusAudioRefs.current.length > 0) {
-      bonusAudioRefs.current.forEach((audio) => {
-        audio.volume = isMuted ? 0 : 1;
-      });
-    }
+    bonusAudioRefs.current.forEach((audio) => {
+      audio.volume = isMuted ? 0 : 1;
+    });
   }, [isMuted, bgVolume, sfxVolume]);
 
   useEffect(() => {
@@ -202,7 +215,6 @@ const PianoTilesGame = () => {
 
   useEffect(() => {
     if (!isPlaying && !gameOver) {
-      console.log("Menu BG Music should play automatically");
       if (menuBgMusicRef.current) menuBgMusicRef.current.pause();
       menuBgMusicRef.current = new Audio(menuBgMusic);
       menuBgMusicRef.current.loop = true;
@@ -212,7 +224,7 @@ const PianoTilesGame = () => {
         .play()
         .then(() => {
           setTimeout(() => {
-            menuBgMusicRef.current.muted = false;
+            if (menuBgMusicRef.current) menuBgMusicRef.current.muted = false;
           }, 500);
         })
         .catch((err) => console.log("Erreur musique menu:", err));
@@ -271,7 +283,7 @@ const PianoTilesGame = () => {
   useEffect(() => {
     if (isPlaying) {
       bgMusicRef.current
-        .play()
+        ?.play()
         .catch((err) => console.log("Erreur musique de fond:", err));
     } else {
       if (bgMusicRef.current) {
@@ -285,7 +297,11 @@ const PianoTilesGame = () => {
     if (address) await click(address);
   };
 
-  const addFeedback = (message, color, bgImage = null) => {
+  const addFeedback = (
+    message: string,
+    color: string,
+    bgImage: string | null = null
+  ) => {
     const id = Date.now() + Math.random();
     const newFeedback = { id, message, color, bgImage };
     setFeedbacks((prev) => [...prev, newFeedback]);
@@ -295,9 +311,9 @@ const PianoTilesGame = () => {
   };
 
   const startGame = async () => {
-    clearInterval(animTimerRef.current);
-    clearInterval(spawnTimerRef.current);
-    clearInterval(accelTimerRef.current);
+    if (animTimerRef.current) clearInterval(animTimerRef.current);
+    if (spawnTimerRef.current) clearInterval(spawnTimerRef.current);
+    if (accelTimerRef.current) clearInterval(accelTimerRef.current);
     setRows([]);
     setScore(0);
     setLives(10);
@@ -317,13 +333,13 @@ const PianoTilesGame = () => {
     }
   };
 
-  const endGame = async (message) => {
+  const endGame = async () => {
     await submitScore(score);
     setIsPlaying(false);
     setGameOver(true);
-    clearInterval(animTimerRef.current);
-    clearInterval(spawnTimerRef.current);
-    clearInterval(accelTimerRef.current);
+    if (animTimerRef.current) clearInterval(animTimerRef.current);
+    if (spawnTimerRef.current) clearInterval(spawnTimerRef.current);
+    if (accelTimerRef.current) clearInterval(accelTimerRef.current);
   };
 
   useEffect(() => {
@@ -346,7 +362,7 @@ const PianoTilesGame = () => {
             setLives((prevLives) => {
               const newLives = prevLives - 1;
               if (newLives <= 0) {
-                endGame("Game Over ! Vous avez perdu toutes vos vies.");
+                endGame();
                 return 0;
               }
               return newLives;
@@ -356,27 +372,23 @@ const PianoTilesGame = () => {
         return updatedRows;
       });
     }, updateInterval);
-    return () => clearInterval(animTimerRef.current);
+    return () => clearInterval(animTimerRef.current as NodeJS.Timeout);
   }, [isPlaying, tileSpeed, containerHeight]);
 
   useEffect(() => {
     if (!isPlaying) return;
     spawnTimerRef.current = setInterval(() => {
       const noteValue = melody[spawnIndexRef.current];
-      let isBonus;
+      let isBonus: boolean;
       if (normalTileCountRef.current >= 10) {
         isBonus = true;
         normalTileCountRef.current = 0;
       } else {
-        if (Math.random() < 0.1) {
-          isBonus = true;
-        } else {
-          isBonus = false;
-          normalTileCountRef.current += 1;
-        }
+        isBonus = Math.random() < 0.1;
+        if (!isBonus) normalTileCountRef.current += 1;
       }
-      let background;
-      let bonusIndex = null;
+      let background: string;
+      let bonusIndex: number | null = null;
       if (isBonus) {
         bonusIndex = bonusBgIndexRef.current;
         background = bonusBgs[bonusIndex];
@@ -387,7 +399,7 @@ const PianoTilesGame = () => {
         background = bgs[bgIndexRef.current];
         bgIndexRef.current = (bgIndexRef.current + 1) % bgs.length;
       }
-      const newTile = {
+      const newTile: Tile = {
         id: Date.now() + Math.random(),
         top: -rowHeight,
         blackColumn: Math.floor(Math.random() * columns),
@@ -399,7 +411,7 @@ const PianoTilesGame = () => {
       setRows((prev) => [...prev, newTile]);
       spawnIndexRef.current = (spawnIndexRef.current + 1) % melody.length;
     }, spawnInterval);
-    return () => clearInterval(spawnTimerRef.current);
+    return () => clearInterval(spawnTimerRef.current as NodeJS.Timeout);
   }, [isPlaying, spawnInterval, rowHeight]);
 
   useEffect(() => {
@@ -408,10 +420,13 @@ const PianoTilesGame = () => {
       setTileSpeed((prev) => prev * 1.05);
       setSpawnInterval((prev) => Math.max(300, prev - 50));
     }, 10000);
-    return () => clearInterval(accelTimerRef.current);
+    return () => clearInterval(accelTimerRef.current as NodeJS.Timeout);
   }, [isPlaying]);
 
-  const handleClick = (e, colIndex) => {
+  const handleClick = (
+    e: React.MouseEvent<HTMLDivElement>,
+    colIndex: number
+  ) => {
     e.stopPropagation();
     setRows((prevRows) => {
       const tolerance = 30;
@@ -439,7 +454,7 @@ const PianoTilesGame = () => {
   useEffect(() => {
     if (clickedTile) {
       if (clickedTile.isBonus) {
-        const bonusAudio = bonusAudioRefs.current[clickedTile.bonusIndex];
+        const bonusAudio = bonusAudioRefs.current[clickedTile.bonusIndex || 0];
         bonusAudio.currentTime = 0;
         bonusAudio.play();
         if (clickedTile.bonusIndex === 2 || clickedTile.bonusIndex === 6) {
@@ -457,7 +472,7 @@ const PianoTilesGame = () => {
       }
       const scoreToAdd = clickedTile.isBonus ? 4 : 1;
       if (clickedTile.isBonus) {
-        const bonusFeedbackBg = bonusImages[clickedTile.bonusIndex];
+        const bonusFeedbackBg = bonusImages[clickedTile.bonusIndex || 0];
         addFeedback(`+${scoreToAdd}`, "#FFF", bonusFeedbackBg);
       } else {
         addFeedback(scoreToAdd > 1 ? `+${scoreToAdd}` : "+1", "#FFF");
@@ -465,7 +480,7 @@ const PianoTilesGame = () => {
       setScore((prev) => prev + scoreToAdd);
       setClickedTile(null);
     }
-  }, [clickedTile]);
+  }, [clickedTile, address]);
 
   const renderSettings = () => {
     return (
@@ -481,7 +496,7 @@ const PianoTilesGame = () => {
             {bgMusics.map((music, index) => (
               <button
                 key={index}
-                onClick={() => setBgMusicIndex(Number(index))}
+                onClick={() => setBgMusicIndex(index)}
                 className={`col-span-1 uppercase rounded-xl h-[40px] text-xl ${
                   bgMusicIndex === index
                     ? "border-2 border-double border-transparent bg-[#a1055c]"
@@ -659,7 +674,7 @@ const PianoTilesGame = () => {
           <div className="flex flex-col left-2 bottom-[-210px] h-[200px] gap-1 items-start absolute z-30 max-w-[20px] flex-wrap">
             {Array.from({ length: lives }).map((_, i) => (
               <span key={i} className="text-lg ml-1">
-                <img className="" src="/logo/life.png" alt="life logo" />
+                <img src="/logo/life.png" alt="life logo" />
               </span>
             ))}
           </div>
@@ -710,8 +725,8 @@ const PianoTilesGame = () => {
                 unoptimized
                 className="mb-6"
                 onError={(e) => {
-                  e.target.onerror = null;
-                  e.target.src = "/bonus/default.png";
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = "/bonus/default.png";
                 }}
               />
             )}
