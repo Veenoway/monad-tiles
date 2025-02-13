@@ -80,7 +80,7 @@ const bgs: string[] = [
 ];
 
 const bonusBgs: string[] = [
-  "/bg/bill.jpg",
+  "/bg/intern.gif",
   "/bg/port.gif",
   "/bg/eunice.jpg",
   "/bg/tunez.jpg",
@@ -550,6 +550,15 @@ const PianoTilesGame: React.FC = () => {
     );
   };
 
+  const [animate, setAnimate] = useState(false);
+
+  const handleClicks = () => {
+    setAnimate(false);
+    setTimeout(() => {
+      setAnimate(true);
+    }, 50);
+  };
+
   return (
     <div
       className="rounded-2xl relative overflow-hidden shadow-lg shadow-[rgba(0,0,0,0.2)]"
@@ -560,6 +569,12 @@ const PianoTilesGame: React.FC = () => {
         fontFamily: "Boogaloo",
       }}
     >
+      <button
+        onClick={handleClicks}
+        className="bg-blue-500 text-white px-4 py-2 rounded mt-4 ml-4"
+      >
+        Lancer l'animation
+      </button>
       {showSettings && renderSettings()}
       {!isPlaying && !gameOver && (
         <div className="absolute z-50 inset-0 py-10 flex flex-col items-center bg-[url('/bg/main-bg.jpg')] bg-bottom">
@@ -699,6 +714,13 @@ const PianoTilesGame: React.FC = () => {
           overflow: "hidden",
         }}
       >
+        <div
+          className={`absolute top-[60px] z-[20] w-[350px] ${
+            animate ? "animate-bonus" : "offscreen"
+          }`}
+        >
+          <img src="/bonus/bonus-x2.png" alt="Bonus" />
+        </div>
         {feedbacks.map((fb) => (
           <div
             key={fb.id}
