@@ -5,7 +5,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { GoMute, GoUnmute } from "react-icons/go";
 import { useAccount } from "wagmi";
 
-// Interface pour typer une tuile du jeu
 interface Tile {
   id: number;
   top: number;
@@ -15,62 +14,10 @@ interface Tile {
   background: string;
   bonusIndex: number | null;
   processed?: boolean;
+  specialBonus?: boolean;
 }
 
-// Définition des tableaux de chaînes
-const melody: string[] = [
-  // Section 1: Intro
-  "F#4",
-  "G#4",
-  "A4",
-  "B4",
-  "A4",
-  "G#4",
-  "F#4",
-  "E4",
-  "F#4",
-  "G#4",
-  "A4",
-  "B4",
-  "C#5",
-  "B4",
-  "A4",
-  "G#4",
-  // Section 2: Main Theme
-  "F#4",
-  "E4",
-  "F#4",
-  "G#4",
-  "A4",
-  "B4",
-  "A4",
-  "G#4",
-  "F#4",
-  "E4",
-  "D4",
-  "E4",
-  "F#4",
-  "G#4",
-  "A4",
-  "G#4",
-  // Section 3: Bridge / Variation
-  "F#4",
-  "G#4",
-  "A4",
-  "B4",
-  "C#5",
-  "B4",
-  "A4",
-  "G#4",
-  "F#4",
-  "G#4",
-  "A4",
-  "B4",
-  "C#5",
-  "B4",
-  "A4",
-  "G#4",
-];
+const melody: string[] = [];
 
 const bgs: string[] = [
   "/background/1.jpg",
@@ -80,7 +27,7 @@ const bgs: string[] = [
 ];
 
 const bonusBgs: string[] = [
-  "/bg/intern.gif",
+  "/bg/bill.jpg",
   "/bg/port.gif",
   "/bg/eunice.jpg",
   "/bg/tunez.jpg",
@@ -90,23 +37,27 @@ const bonusBgs: string[] = [
   "/bg/thisisfin.jpg",
   "/bg/john.jpg",
   "/bg/fitz.jpg",
-  "/bg/gizmo.jpg",
+  "/bg/danny.jpg",
   "/bg/king.jpg",
+  "/bg/gizmo.jpg",
+  "/bg/intern.gif",
 ];
 
 const bonusImages: string[] = [
   "/bonus/pfp-bill.png",
   "/bonus/pfp-port.png",
-  "/bonus/pfp-eunice.png", // index 2 : eunice
+  "/bonus/pfp-eunice.png",
   "/bonus/pfp-tunez.png",
   "/bonus/pfp-mike.png",
   "/bonus/pfp-keone.png",
-  "/bonus/pfp-sailornini.png", // index 6 : sailornini
+  "/bonus/pfp-sailornini.png",
   "/bonus/pfp-thisisfin.png",
   "/bonus/pfp-john.png",
   "/bonus/pfp-fitz.png",
-  "/bonus/pfp-gizmo.png",
+  "/bonus/pfp-danny.png",
   "/bonus/pfp-king.png",
+  "/bonus/pfp-gizmo.png",
+  "/bonus/pfp-intern.png",
 ];
 
 const bonusSongs: string[] = [
@@ -120,8 +71,10 @@ const bonusSongs: string[] = [
   "/sound/thisisfin.mp3",
   "/sound/john.mp3",
   "/sound/fitz.mp3",
+  "/sound/Danny.mp3",
+  "/sound/king.mp3",
   "/sound/gizmo.mp3",
-  "/sound/fitz.mp3",
+  "/sound/intern.mp3",
 ];
 
 const bgMusics: string[] = [
@@ -143,7 +96,6 @@ const PianoTilesGame: React.FC = () => {
   const computedInitialSpeed =
     (containerHeight + rowHeight) / (2000 / updateInterval);
 
-  // États de jeu
   const [rows, setRows] = useState<Tile[]>([]);
   const [score, setScore] = useState<number>(0);
   const [lives, setLives] = useState<number>(10);
@@ -173,6 +125,7 @@ const PianoTilesGame: React.FC = () => {
   const bgIndexRef = useRef<number>(0);
   const bonusBgIndexRef = useRef<number>(0);
   const normalTileCountRef = useRef<number>(0);
+  const totalTileCountRef = useRef<number>(0);
   const bonusSongIndexRef = useRef<number>(0);
 
   const [clickedTile, setClickedTile] = useState<Tile | null>(null);
@@ -324,6 +277,7 @@ const PianoTilesGame: React.FC = () => {
     bgIndexRef.current = 0;
     bonusBgIndexRef.current = 0;
     normalTileCountRef.current = 0;
+    totalTileCountRef.current = 0;
     bonusSongIndexRef.current = 0;
     setClickedTile(null);
     setIsPlaying(true);
@@ -379,36 +333,56 @@ const PianoTilesGame: React.FC = () => {
     if (!isPlaying) return;
     spawnTimerRef.current = setInterval(() => {
       const noteValue = melody[spawnIndexRef.current];
-      let isBonus: boolean;
-      if (normalTileCountRef.current >= 10) {
-        isBonus = true;
-        normalTileCountRef.current = 0;
+
+      totalTileCountRef.current++;
+
+      if (
+        totalTileCountRef.current !== 0 &&
+        totalTileCountRef.current % 60 === 0
+      ) {
+        const newTile: Tile = {
+          id: Date.now() + Math.random(),
+          top: -rowHeight,
+          blackColumn: Math.floor(Math.random() * columns),
+          note: noteValue,
+          isBonus: false,
+          specialBonus: true,
+          background: "/bonus/star.gif",
+          bonusIndex: null,
+        };
+        setRows((prev) => [...prev, newTile]);
       } else {
-        isBonus = Math.random() < 0.1;
-        if (!isBonus) normalTileCountRef.current += 1;
+        let isBonus: boolean;
+        if (normalTileCountRef.current >= 10) {
+          isBonus = true;
+          normalTileCountRef.current = 0;
+        } else {
+          isBonus = Math.random() < 0.1;
+          if (!isBonus) normalTileCountRef.current += 1;
+        }
+        let background: string;
+        let bonusIndex: number | null = null;
+        if (isBonus) {
+          bonusIndex = bonusBgIndexRef.current;
+          background = bonusBgs[bonusIndex];
+          console.log("Spawn bonus tile:", bonusIndex, background);
+          bonusBgIndexRef.current =
+            (bonusBgIndexRef.current + 1) % bonusBgs.length;
+        } else {
+          background = bgs[bgIndexRef.current];
+          bgIndexRef.current = (bgIndexRef.current + 1) % bgs.length;
+        }
+        const newTile: Tile = {
+          id: Date.now() + Math.random(),
+          top: -rowHeight,
+          blackColumn: Math.floor(Math.random() * columns),
+          note: noteValue,
+          isBonus: isBonus,
+          background: background,
+          bonusIndex: bonusIndex,
+        };
+        setRows((prev) => [...prev, newTile]);
       }
-      let background: string;
-      let bonusIndex: number | null = null;
-      if (isBonus) {
-        bonusIndex = bonusBgIndexRef.current;
-        background = bonusBgs[bonusIndex];
-        console.log("Spawn bonus tile:", bonusIndex, background);
-        bonusBgIndexRef.current =
-          (bonusBgIndexRef.current + 1) % bonusBgs.length;
-      } else {
-        background = bgs[bgIndexRef.current];
-        bgIndexRef.current = (bgIndexRef.current + 1) % bgs.length;
-      }
-      const newTile: Tile = {
-        id: Date.now() + Math.random(),
-        top: -rowHeight,
-        blackColumn: Math.floor(Math.random() * columns),
-        note: noteValue,
-        isBonus: isBonus,
-        background: background,
-        bonusIndex: bonusIndex,
-      };
-      setRows((prev) => [...prev, newTile]);
       spawnIndexRef.current = (spawnIndexRef.current + 1) % melody.length;
     }, spawnInterval);
     return () => clearInterval(spawnTimerRef.current as NodeJS.Timeout);
@@ -453,7 +427,12 @@ const PianoTilesGame: React.FC = () => {
 
   useEffect(() => {
     if (clickedTile) {
-      if (clickedTile.isBonus) {
+      if (clickedTile.specialBonus) {
+        setTileSpeed((prev) => prev * 0.8);
+        setSpawnInterval((prev) => prev / 0.8);
+        addFeedback("Speed Reduced!", "#00FF00");
+        handleClicks();
+      } else if (clickedTile.isBonus) {
         const bonusAudio = bonusAudioRefs.current[clickedTile.bonusIndex || 0];
         bonusAudio.currentTime = 0;
         bonusAudio.play();
@@ -719,7 +698,7 @@ const PianoTilesGame: React.FC = () => {
             animate ? "animate-bonus" : "offscreen"
           }`}
         >
-          <img src="/bonus/bonus-x2.png" alt="Bonus" />
+          <img src="/bonus/bonus-fin-2.png" alt="Bonus" />
         </div>
         {feedbacks.map((fb) => (
           <div
