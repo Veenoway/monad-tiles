@@ -573,7 +573,7 @@ const PianoTilesGame: React.FC = () => {
         onClick={handleClicks}
         className="bg-blue-500 text-white px-4 py-2 rounded mt-4 ml-4"
       >
-        Lancer l'animation
+        Start animation
       </button>
       {showSettings && renderSettings()}
       {!isPlaying && !gameOver && (

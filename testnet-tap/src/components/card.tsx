@@ -28,7 +28,7 @@ export const Card = ({ card, isFlipped, onClick, disabled }: CardProps) => {
 
   return (
     <Tilt
-      {...options}
+      {...(options as unknown as Tilt)}
       className={cn(
         " shadow-2xl border-2 bg-[rgba(255,255,255,0.05)] border-[rgba(255,255,255,0.1)] rounded-xl relative  h-[25vh] w-auto",
         {

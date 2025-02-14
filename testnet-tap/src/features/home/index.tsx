@@ -1,14 +1,6 @@
 "use client";
-
 import { WalletConnection } from "@/components/connector";
 import PianoTilesGame from "@/components/music";
-
-enum GameStatus {
-  PLAYING = 0,
-  SUCCESS = 1,
-  LOSE = 2,
-  WAITING = 3,
-}
 
 export const Home = () => {
   return (

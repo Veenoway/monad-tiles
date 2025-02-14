@@ -5,17 +5,11 @@ import {
 import { useCallback, useEffect, useState } from "react";
 import { useAccount, useReadContract } from "wagmi";
 
-type LeaderboardData = {
-  topPlayers: string[];
-  scores: number[];
-  txCounts: number[];
-};
-
 type UsePianoRelayReturn = {
   click: (playerAddress: string) => Promise<void>;
   submitScore: (score: number) => Promise<void>;
-  leaderboard: any;
-  currentGlobalCount: any;
+  leaderboard: unknown | [string[], number[], number[]];
+  currentGlobalCount: unknown | [string, number, number];
   isLoading: boolean;
   error: string | null;
   txHashes: string[];
@@ -57,8 +51,8 @@ export function usePianoRelay(): UsePianoRelayReturn {
           throw new Error(data.error || "Transaction failed");
         }
         setTxHashes((prev) => [...prev, data.txHash]);
-      } catch (e: any) {
-        setError(e.message);
+      } catch (e) {
+        setError((e as { message: string }).message);
       } finally {
         setIsLoading(false);
         refetchGlobalCount();
@@ -89,8 +83,8 @@ export function usePianoRelay(): UsePianoRelayReturn {
           throw new Error(data.error || "Transaction failed");
         }
         setTxHashes((prev) => [...prev, data.txHash]);
-      } catch (e: any) {
-        setError(e.message);
+      } catch (e) {
+        setError((e as { message: string }).message);
       } finally {
         setIsLoading(false);
         refetchGlobalCount();
