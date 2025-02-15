@@ -428,8 +428,8 @@ const PianoTilesGame: React.FC = () => {
   useEffect(() => {
     if (clickedTile) {
       if (clickedTile.specialBonus) {
-        setTileSpeed((prev) => prev * 0.8);
-        setSpawnInterval((prev) => prev / 0.8);
+        setTileSpeed((prev) => prev * 0.9);
+        setSpawnInterval((prev) => prev / 0.9);
         addFeedback("Speed Reduced!", "#00FF00");
         handleClicks();
       } else if (clickedTile.isBonus) {
@@ -548,15 +548,9 @@ const PianoTilesGame: React.FC = () => {
         fontFamily: "Boogaloo",
       }}
     >
-      <button
-        onClick={handleClicks}
-        className="bg-blue-500 text-white px-4 py-2 rounded mt-4 ml-4"
-      >
-        Start animation
-      </button>
       {showSettings && renderSettings()}
       {!isPlaying && !gameOver && (
-        <div className="absolute z-50 inset-0 py-10 flex flex-col items-center bg-[url('/bg/main-bg.jpg')] bg-bottom">
+        <div className="absolute z-50 inset-0 py-10 flex flex-col items-center bg-[url('/bg/main-bg.jpg')] bg-no-repeat bg-bottom">
           <Image
             src="/logo/logo-monad-tiles.png"
             alt="lose message"
@@ -685,7 +679,7 @@ const PianoTilesGame: React.FC = () => {
           position: "relative",
           width: "100%",
           height: containerHeight + "px",
-          backgroundImage: "url('/bg/main-bg.jpg')",
+          backgroundImage: "url('/background/dede.png')",
           backgroundSize: "cover",
           backgroundPosition: "top",
           backgroundRepeat: "no-repeat",
