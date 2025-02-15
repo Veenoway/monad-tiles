@@ -111,6 +111,8 @@ const PianoTilesGame: React.FC = () => {
   const [bgVolume, setBgVolume] = useState<number>(0.3);
   const [sfxVolume, setSfxVolume] = useState<number>(0.3);
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [scoreMultiplier, setScoreMultiplier] = useState<number>(1);
+  const [currentBonusImage, setCurrentBonusImage] = useState<string>("");
 
   const animTimerRef = useRef<NodeJS.Timeout | null>(null);
   const spawnTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -333,12 +335,11 @@ const PianoTilesGame: React.FC = () => {
     if (!isPlaying) return;
     spawnTimerRef.current = setInterval(() => {
       const noteValue = melody[spawnIndexRef.current];
-
       totalTileCountRef.current++;
 
       if (
         totalTileCountRef.current !== 0 &&
-        totalTileCountRef.current % 60 === 0
+        totalTileCountRef.current % 40 === 0
       ) {
         const newTile: Tile = {
           id: Date.now() + Math.random(),
@@ -428,10 +429,29 @@ const PianoTilesGame: React.FC = () => {
   useEffect(() => {
     if (clickedTile) {
       if (clickedTile.specialBonus) {
-        setTileSpeed((prev) => prev * 0.9);
-        setSpawnInterval((prev) => prev / 0.9);
-        addFeedback("Speed Reduced!", "#00FF00");
+        const bonusTypes = ["multiplier", "slower"];
+        const chosenType =
+          bonusTypes[Math.floor(Math.random() * bonusTypes.length)];
+
+        if (chosenType === "multiplier") {
+          const newMultiplier = Math.random() < 0.5 ? 2 : 4;
+          setScoreMultiplier(newMultiplier);
+          setCurrentBonusImage(
+            newMultiplier === 2
+              ? "/bonus/bonus-danny.png"
+              : "/bonus/bonus-3.png"
+          );
+        } else {
+          setCurrentBonusImage("/bonus/bonus-fin-2.png");
+          setTileSpeed((prev) => prev * 0.8);
+          setSpawnInterval((prev) => prev / 0.8);
+        }
         handleClicks();
+        setTimeout(() => {
+          setScoreMultiplier(1);
+          setCurrentBonusImage("");
+          addFeedback("Bonus Ended", "#FF4500");
+        }, 30000);
       } else if (clickedTile.isBonus) {
         const bonusAudio = bonusAudioRefs.current[clickedTile.bonusIndex || 0];
         bonusAudio.currentTime = 0;
@@ -449,17 +469,18 @@ const PianoTilesGame: React.FC = () => {
       if (address) {
         handlePlayerClick();
       }
-      const scoreToAdd = clickedTile.isBonus ? 4 : 1;
+      const baseScore = clickedTile.isBonus ? 4 : 1;
+      const finalScore = baseScore * scoreMultiplier;
       if (clickedTile.isBonus) {
         const bonusFeedbackBg = bonusImages[clickedTile.bonusIndex || 0];
-        addFeedback(`+${scoreToAdd}`, "#FFF", bonusFeedbackBg);
+        addFeedback(`+${finalScore}`, "#FFF", bonusFeedbackBg);
       } else {
-        addFeedback(scoreToAdd > 1 ? `+${scoreToAdd}` : "+1", "#FFF");
+        addFeedback(finalScore > 1 ? `+${finalScore}` : "+1", "#FFF");
       }
-      setScore((prev) => prev + scoreToAdd);
+      setScore((prev) => prev + finalScore);
       setClickedTile(null);
     }
-  }, [clickedTile, address]);
+  }, [clickedTile, address, scoreMultiplier]);
 
   const renderSettings = () => {
     return (
@@ -692,7 +713,7 @@ const PianoTilesGame: React.FC = () => {
             animate ? "animate-bonus" : "offscreen"
           }`}
         >
-          <img src="/bonus/bonus-fin-2.png" alt="Bonus" />
+          <img src={currentBonusImage} alt="Bonus" />
         </div>
         {feedbacks.map((fb) => (
           <div
