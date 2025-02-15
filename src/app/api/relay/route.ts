@@ -1,7 +1,6 @@
-// app/api/relay/route.ts
 import {
-  PIANO_CONTRACT_ABI,
-  PIANO_CONTRACT_ADDRESS,
+  PIANO_CONTRACT_ABI as CONTRACT_ABI,
+  PIANO_CONTRACT_ADDRESS as CONTRACT_ADDRESS,
 } from "@/constant/pianoTiles";
 import { NextResponse } from "next/server";
 import { Chain, createWalletClient, getContract, http } from "viem";
@@ -10,10 +9,10 @@ import { privateKeyToAccount } from "viem/accounts";
 const RELAYER_PRIVATE_KEY =
   "0x1dcf6bcbc3557478e456c215e7c51f836cd41ca65b59f152c80694e7edebb49a";
 const RPC_URL =
-  "https://rpc-devnet.monadinfra.com/rpc/3fe540e310bbb6ef0b9f16cd23073b0a";
-const CHAIN_ID = 20143;
+  "https://testnet-rpc2.monad.xyz/52227f026fa8fac9e2014c58fbf5643369b3bfc6";
+const CHAIN_ID = 10143;
 
-if (!RELAYER_PRIVATE_KEY || !RPC_URL || !PIANO_CONTRACT_ADDRESS) {
+if (!RELAYER_PRIVATE_KEY || !RPC_URL || !CONTRACT_ADDRESS) {
   throw new Error("Relayer configuration missing in environment variables");
 }
 
@@ -50,15 +49,17 @@ async function processTransaction(
   });
 
   const contract = getContract({
-    address: PIANO_CONTRACT_ADDRESS,
-    abi: PIANO_CONTRACT_ABI,
+    address: CONTRACT_ADDRESS,
+    abi: CONTRACT_ABI,
     client: walletClient,
   });
 
   if (currentNonce === null) {
     const nonceHex = await walletClient.request({
-      method: "eth_getTransactionCount" as never,
-      params: [account.address, "latest"],
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      method: "eth_getTransactionCount",
+      params: [account.address, "pending"],
     });
     currentNonce = parseInt(String(nonceHex), 16);
   }
@@ -66,22 +67,51 @@ async function processTransaction(
   currentNonce++;
 
   let txHash: string;
-  if (action === "click") {
-    txHash = await contract.write.click([playerAddress], txOptions);
-  } else if (action === "submitScore") {
-    if (typeof score !== "number") {
+  try {
+    if (action === "click") {
+      txHash = await contract.write.click([playerAddress], txOptions);
+    } else if (action === "submitScore") {
+      if (typeof score !== "number") {
+        throw new Error(
+          "Invalid or missing 'score' parameter for submitScore action."
+        );
+      }
+      txHash = await contract.write.submitScore(
+        [score, playerAddress],
+        txOptions
+      );
+    } else {
       throw new Error(
-        "Invalid or missing 'score' parameter for submitScore action."
+        "Invalid action. Supported actions: 'click', 'submitScore'."
       );
     }
-    txHash = await contract.write.submitScore(
-      [score, playerAddress],
-      txOptions
-    );
-  } else {
-    throw new Error(
-      "Invalid action. Supported actions: 'click', 'submitScore'."
-    );
+  } catch (error) {
+    if (
+      (error as { message: string }).message &&
+      (error as { message: string }).message.includes("Nonce too low")
+    ) {
+      const nonceHex = await walletClient.request({
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        method: "eth_getTransactionCount",
+        params: [account.address, "pending"],
+      });
+      currentNonce = parseInt(String(nonceHex), 16);
+      const newTxOptions = { nonce: currentNonce };
+      currentNonce++;
+      if (action === "click") {
+        txHash = await contract.write.click([playerAddress], newTxOptions);
+      } else if (action === "submitScore") {
+        txHash = await contract.write.submitScore(
+          [score, playerAddress],
+          newTxOptions
+        );
+      } else {
+        throw new Error("Invalid action on retry.");
+      }
+    } else {
+      throw error;
+    }
   }
   return txHash;
 }

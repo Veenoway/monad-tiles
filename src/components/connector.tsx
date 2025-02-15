@@ -22,12 +22,12 @@ export function WalletConnection() {
     return `${address?.slice(0, 6)}...${address?.slice(-4)}`;
   };
   console.log("chainID;", chainId);
-  const isWrongNetwork = chainId !== 20143;
+  const isWrongNetwork = chainId !== 10143;
 
   const handleSwitchNetwork = async () => {
     try {
       await switchChainAsync({
-        chainId: 20143,
+        chainId: 10143,
       });
     } catch (err) {
       console.error("Failed to switch network:", err);

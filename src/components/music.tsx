@@ -96,6 +96,10 @@ const PianoTilesGame: React.FC = () => {
   const computedInitialSpeed =
     (containerHeight + rowHeight) / (2000 / updateInterval);
 
+  // Valeurs de base pour la vitesse et l'intervalle
+  const baselineTileSpeedRef = useRef<number>(computedInitialSpeed);
+  const baselineSpawnIntervalRef = useRef<number>(600);
+
   const [rows, setRows] = useState<Tile[]>([]);
   const [score, setScore] = useState<number>(0);
   const [lives, setLives] = useState<number>(10);
@@ -113,6 +117,9 @@ const PianoTilesGame: React.FC = () => {
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [scoreMultiplier, setScoreMultiplier] = useState<number>(1);
   const [currentBonusImage, setCurrentBonusImage] = useState<string>("");
+
+  // Pour gérer la durée des bonus
+  const bonusTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const animTimerRef = useRef<NodeJS.Timeout | null>(null);
   const spawnTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -133,8 +140,9 @@ const PianoTilesGame: React.FC = () => {
   const [clickedTile, setClickedTile] = useState<Tile | null>(null);
 
   const { address } = useAccount();
-  const { click, submitScore } = usePianoRelay();
-
+  const { click, submitScore, currentGlobalCount, leaderboard } =
+    usePianoRelay();
+  console.log("current", currentGlobalCount, leaderboard);
   const toggleMute = () => {
     setIsMuted((prev) => !prev);
   };
@@ -249,7 +257,12 @@ const PianoTilesGame: React.FC = () => {
   }, [isPlaying]);
 
   const handlePlayerClick = async () => {
-    if (address) await click(address);
+    if (address) {
+      const times = scoreMultiplier;
+      await Promise.all(
+        Array.from({ length: times }).map(() => click(address))
+      );
+    }
   };
 
   const addFeedback = (
@@ -273,8 +286,8 @@ const PianoTilesGame: React.FC = () => {
     setScore(0);
     setLives(10);
     setGameOver(false);
-    setTileSpeed(computedInitialSpeed);
-    setSpawnInterval(600);
+    setTileSpeed(baselineTileSpeedRef.current);
+    setSpawnInterval(baselineSpawnIntervalRef.current);
     spawnIndexRef.current = 0;
     bgIndexRef.current = 0;
     bonusBgIndexRef.current = 0;
@@ -337,6 +350,7 @@ const PianoTilesGame: React.FC = () => {
       const noteValue = melody[spawnIndexRef.current];
       totalTileCountRef.current++;
 
+      // Ici, on active le bonus spécial toutes les 40 tuiles (modifiable)
       if (
         totalTileCountRef.current !== 0 &&
         totalTileCountRef.current % 40 === 0
@@ -393,7 +407,9 @@ const PianoTilesGame: React.FC = () => {
     if (!isPlaying) return;
     accelTimerRef.current = setInterval(() => {
       setTileSpeed((prev) => prev * 1.05);
-      setSpawnInterval((prev) => Math.max(300, prev - 50));
+      setSpawnInterval((prev) =>
+        Math.max(baselineSpawnIntervalRef.current, prev - 50)
+      );
     }, 10000);
     return () => clearInterval(accelTimerRef.current as NodeJS.Timeout);
   }, [isPlaying]);
@@ -426,12 +442,18 @@ const PianoTilesGame: React.FC = () => {
     });
   };
 
+  // Gestion du bonus lors du clic sur une tuile
   useEffect(() => {
     if (clickedTile) {
       if (clickedTile.specialBonus) {
         const bonusTypes = ["multiplier", "slower"];
         const chosenType =
           bonusTypes[Math.floor(Math.random() * bonusTypes.length)];
+
+        if (bonusTimerRef.current) {
+          clearTimeout(bonusTimerRef.current);
+          bonusTimerRef.current = null;
+        }
 
         if (chosenType === "multiplier") {
           const newMultiplier = Math.random() < 0.5 ? 2 : 4;
@@ -441,16 +463,27 @@ const PianoTilesGame: React.FC = () => {
               ? "/bonus/bonus-danny.png"
               : "/bonus/bonus-3.png"
           );
+          addFeedback(`x${newMultiplier} Multiplier Activated!`, "#FFD700");
         } else {
+          // Bonus slower : on n'empile pas si déjà actif
+          if (currentBonusImage !== "/bonus/bonus-fin-2.png") {
+            setTileSpeed(baselineTileSpeedRef.current * 0.8);
+            setSpawnInterval(baselineSpawnIntervalRef.current / 0.8);
+          }
           setCurrentBonusImage("/bonus/bonus-fin-2.png");
-          setTileSpeed((prev) => prev * 0.8);
-          setSpawnInterval((prev) => prev / 0.8);
+          addFeedback("Speed Reduced!", "#00FF00");
         }
+        // Lancement de l'animation bonus
         handleClicks();
-        setTimeout(() => {
+        // On démarre (ou redémarre) un timer bonus de 30s
+        bonusTimerRef.current = setTimeout(() => {
           setScoreMultiplier(1);
+          // Pour le bonus slower, on rétablit les valeurs de base
+          setTileSpeed(baselineTileSpeedRef.current);
+          setSpawnInterval(baselineSpawnIntervalRef.current);
           setCurrentBonusImage("");
           addFeedback("Bonus Ended", "#FF4500");
+          bonusTimerRef.current = null;
         }, 30000);
       } else if (clickedTile.isBonus) {
         const bonusAudio = bonusAudioRefs.current[clickedTile.bonusIndex || 0];
@@ -480,7 +513,7 @@ const PianoTilesGame: React.FC = () => {
       setScore((prev) => prev + finalScore);
       setClickedTile(null);
     }
-  }, [clickedTile, address, scoreMultiplier]);
+  }, [clickedTile, address, scoreMultiplier, currentBonusImage]);
 
   const renderSettings = () => {
     return (
@@ -551,7 +584,6 @@ const PianoTilesGame: React.FC = () => {
   };
 
   const [animate, setAnimate] = useState(false);
-
   const handleClicks = () => {
     setAnimate(false);
     setTimeout(() => {
@@ -662,7 +694,9 @@ const PianoTilesGame: React.FC = () => {
           <p className="text-lg text-cyan-300 mb-0 leading-[18px]">
             Best Score
           </p>
-          <p className="text-2xl text-white font-bold mt-0">{score}</p>
+          <p className="text-2xl text-white font-bold mt-0">
+            {Number((currentGlobalCount as [bigint])?.[0] as bigint) || 0}
+          </p>
         </div>
         <Image
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
@@ -713,7 +747,8 @@ const PianoTilesGame: React.FC = () => {
             animate ? "animate-bonus" : "offscreen"
           }`}
         >
-          <img src={currentBonusImage} alt="Bonus" />
+          {/* Affiche l'image du bonus en fonction du type actif */}
+          {currentBonusImage && <img src={currentBonusImage} alt="Bonus" />}
         </div>
         {feedbacks.map((fb) => (
           <div
