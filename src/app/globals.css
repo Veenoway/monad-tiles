@@ -1,0 +1,59 @@
+@import url("https://fonts.googleapis.com/css2?family=Boogaloo&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes bonusAnimation {
+  0% {
+    transform: translateX(-150%);
+  }
+  5% {
+    transform: translateX(-150%) rotate(10deg);
+  }
+  10% {
+    opacity: 1;
+    transform: translateX(-52%) rotate(0deg);
+  }
+  90% {
+    transform: translateX(-48%) rotate(0);
+    opacity: 1;
+  }
+  95% {
+    opacity: 0;
+    transform: translateX(120%);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(120%);
+  }
+}
+
+.offscreen {
+  transform: translateX(-150%);
+}
+
+.animate-bonus {
+  left: 50%;
+  opacity: 0;
+  animation: bonusAnimation 3s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+  animation-fill-mode: backwards;
+}
