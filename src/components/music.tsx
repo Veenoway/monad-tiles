@@ -37,10 +37,12 @@ const bonusBgs: string[] = [
   "/bg/thisisfin.jpg",
   "/bg/john.jpg",
   "/bg/fitz.jpg",
+  "/bg/karma.jpg",
   "/bg/danny.jpg",
   "/bg/king.jpg",
   "/bg/gizmo.jpg",
   "/bg/intern.gif",
+  "/bg/tina.gif",
 ];
 
 const bonusImages: string[] = [
@@ -54,10 +56,12 @@ const bonusImages: string[] = [
   "/bonus/pfp-thisisfin.png",
   "/bonus/pfp-john.png",
   "/bonus/pfp-fitz.png",
+  "/bonus/pfp-karma.png",
   "/bonus/pfp-danny.png",
   "/bonus/pfp-king.png",
   "/bonus/pfp-gizmo.png",
   "/bonus/pfp-intern.png",
+  "/bonus/pfp-tina.png",
 ];
 
 const bonusSongs: string[] = [
@@ -71,10 +75,12 @@ const bonusSongs: string[] = [
   "/sound/thisisfin.mp3",
   "/sound/john.mp3",
   "/sound/fitz.mp3",
+  "/sound/karma.mp3",
   "/sound/Danny.mp3",
   "/sound/king.mp3",
   "/sound/gizmo.mp3",
   "/sound/intern.mp3",
+  "/sound/Tina.mp3",
 ];
 
 const bgMusics: string[] = [
@@ -96,7 +102,6 @@ const PianoTilesGame: React.FC = () => {
   const computedInitialSpeed =
     (containerHeight + rowHeight) / (2000 / updateInterval);
 
-  // Valeurs de base pour la vitesse et l'intervalle
   const baselineTileSpeedRef = useRef<number>(computedInitialSpeed);
   const baselineSpawnIntervalRef = useRef<number>(600);
 
@@ -118,7 +123,6 @@ const PianoTilesGame: React.FC = () => {
   const [scoreMultiplier, setScoreMultiplier] = useState<number>(1);
   const [currentBonusImage, setCurrentBonusImage] = useState<string>("");
 
-  // Pour gérer la durée des bonus
   const bonusTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   const animTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -137,6 +141,9 @@ const PianoTilesGame: React.FC = () => {
   const totalTileCountRef = useRef<number>(0);
   const bonusSongIndexRef = useRef<number>(0);
 
+  const specialBonusSoundPath = "/sound/bonus.mp3";
+  const specialBonusAudioRef = useRef<HTMLAudioElement | null>(null);
+
   const [clickedTile, setClickedTile] = useState<Tile | null>(null);
 
   const { address } = useAccount();
@@ -146,6 +153,12 @@ const PianoTilesGame: React.FC = () => {
   const toggleMute = () => {
     setIsMuted((prev) => !prev);
   };
+
+  useEffect(() => {
+    audioRef.current = new Audio("/bloop-1.mp3");
+    bonusAudioRefs.current = bonusSongs.map((song) => new Audio(song));
+    specialBonusAudioRef.current = new Audio(specialBonusSoundPath);
+  }, []);
 
   useEffect(() => {
     audioRef.current = new Audio("/bloop-1.mp3");
@@ -162,6 +175,9 @@ const PianoTilesGame: React.FC = () => {
     bonusAudioRefs.current.forEach((audio) => {
       audio.volume = isMuted ? 0 : 1;
     });
+    if (specialBonusAudioRef.current) {
+      specialBonusAudioRef.current.volume = isMuted ? 0 : 1;
+    }
   }, [isMuted, bgVolume, sfxVolume]);
 
   useEffect(() => {
@@ -350,7 +366,6 @@ const PianoTilesGame: React.FC = () => {
       const noteValue = melody[spawnIndexRef.current];
       totalTileCountRef.current++;
 
-      // Ici, on active le bonus spécial toutes les 40 tuiles (modifiable)
       if (
         totalTileCountRef.current !== 0 &&
         totalTileCountRef.current % 40 === 0
@@ -442,13 +457,17 @@ const PianoTilesGame: React.FC = () => {
     });
   };
 
-  // Gestion du bonus lors du clic sur une tuile
   useEffect(() => {
     if (clickedTile) {
       if (clickedTile.specialBonus) {
         const bonusTypes = ["multiplier", "slower"];
         const chosenType =
           bonusTypes[Math.floor(Math.random() * bonusTypes.length)];
+
+        if (specialBonusAudioRef.current) {
+          specialBonusAudioRef.current.currentTime = 0;
+          specialBonusAudioRef.current.play();
+        }
 
         if (bonusTimerRef.current) {
           clearTimeout(bonusTimerRef.current);
@@ -465,20 +484,16 @@ const PianoTilesGame: React.FC = () => {
           );
           addFeedback(`x${newMultiplier} Multiplier Activated!`, "#FFD700");
         } else {
-          // Bonus slower : on n'empile pas si déjà actif
           if (currentBonusImage !== "/bonus/bonus-fin-2.png") {
-            setTileSpeed(baselineTileSpeedRef.current * 0.8);
-            setSpawnInterval(baselineSpawnIntervalRef.current / 0.8);
+            setTileSpeed(baselineTileSpeedRef.current * 0.88);
+            setSpawnInterval(baselineSpawnIntervalRef.current / 0.88);
           }
           setCurrentBonusImage("/bonus/bonus-fin-2.png");
           addFeedback("Speed Reduced!", "#00FF00");
         }
-        // Lancement de l'animation bonus
         handleClicks();
-        // On démarre (ou redémarre) un timer bonus de 30s
         bonusTimerRef.current = setTimeout(() => {
           setScoreMultiplier(1);
-          // Pour le bonus slower, on rétablit les valeurs de base
           setTileSpeed(baselineTileSpeedRef.current);
           setSpawnInterval(baselineSpawnIntervalRef.current);
           setCurrentBonusImage("");
