@@ -1,4 +1,5 @@
 import { usePianoRelay } from "@/hook/usePianoTiles";
+import { useModalStore } from "@/store/modalStore";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useEffect, useRef, useState } from "react";
@@ -95,6 +96,7 @@ const gameOverBgMusics: string[] = ["/sound/tapion.mp3"];
 const gameOverSound: string = "/sound/haha.mp3";
 
 const PianoTilesGame: React.FC = () => {
+  const { setIsOpen } = useModalStore();
   const containerHeight = 600;
   const rowHeight = 150;
   const columns = 4;
@@ -295,6 +297,10 @@ const PianoTilesGame: React.FC = () => {
   };
 
   const startGame = async () => {
+    if (!address) {
+      setIsOpen(true);
+      return;
+    }
     if (animTimerRef.current) clearInterval(animTimerRef.current);
     if (spawnTimerRef.current) clearInterval(spawnTimerRef.current);
     if (accelTimerRef.current) clearInterval(accelTimerRef.current);

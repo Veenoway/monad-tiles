@@ -1,5 +1,6 @@
 "use client";
 
+import { useModalStore } from "@/store/modalStore";
 import { FC, PropsWithChildren } from "react";
 import { useConnect } from "wagmi";
 import {
@@ -10,15 +11,14 @@ import {
   DialogTrigger,
 } from "./modal";
 
-export const WalletModal: FC<
-  PropsWithChildren & { open: boolean; setOpen: (value: boolean) => void }
-> = ({ children, open, setOpen }) => {
+export const WalletModal: FC<PropsWithChildren> = ({ children }) => {
   const { connect, connectors } = useConnect();
+  const { isOpen, setIsOpen } = useModalStore();
   return (
-    <Dialog open={open}>
+    <Dialog open={isOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent
-        close={() => setOpen(false)}
+        close={() => setIsOpen(false)}
         className="sm:max-w-[425px] font-boo text-white bg-[#190e59] p-10 rounded-2xl border border-[rgba(255,255,255,0.1)]"
       >
         <DialogHeader>
@@ -45,7 +45,7 @@ export const WalletModal: FC<
               }}
               onClick={() => {
                 connect({ connector });
-                setOpen(false);
+                setIsOpen(false);
               }}
               className=" bg-[#a1055c]  rounded-lg h-[50px] px-2 font-medium text-xl uppercase"
             >

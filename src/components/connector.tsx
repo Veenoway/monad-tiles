@@ -1,11 +1,12 @@
 "use client";
 
+import { useModalStore } from "@/store/modalStore";
 import { useEffect, useState } from "react";
 import { useAccount, useDisconnect, useSwitchChain } from "wagmi";
 import { WalletModal } from "./connector-modal";
 
 export function WalletConnection() {
-  const [open, setOpen] = useState(false);
+  const { setIsOpen } = useModalStore();
   const { address, isConnecting, chainId } = useAccount();
   const { disconnect } = useDisconnect();
   const { switchChainAsync } = useSwitchChain();
@@ -46,12 +47,9 @@ export function WalletConnection() {
     return (
       <button
         onClick={handleSwitchNetwork}
-        className="bg-[url('/assets/orderly-gradient.png')] bg-center hover:bg-top bg-no-repeat bg-cover
-          flex items-center rounded-full w-fit h-[50px] border border-borderColor px-8 py-5
-          text-lg text-white font-medium transition-all duration-300 ease-in-out
-          disabled:opacity-50 disabled:cursor-not-allowed"
+        className=" bg-[#a1055c] rounded-lg h-[50px] px-4 font-bold text-xl uppercase min-w-[170px]"
       >
-        Switch to Monad Devnet
+        Switch to Monad Testnet
       </button>
     );
   }
@@ -59,9 +57,9 @@ export function WalletConnection() {
   return (
     <div>
       {!address && (
-        <WalletModal open={open} setOpen={setOpen}>
+        <WalletModal>
           <button
-            onClick={() => setOpen(true)}
+            onClick={() => setIsOpen(true)}
             className=" bg-[#a1055c] rounded-lg h-[50px] px-2 font-bold text-xl uppercase min-w-[170px]"
           >
             Connect Wallet
@@ -73,10 +71,7 @@ export function WalletConnection() {
         <div className="flex items-center gap-4">
           <button
             onClick={handleDisconnect}
-            className={`bg-[url('/assets/orderly-gradient.png')] bg-center hover:bg-top bg-no-repeat bg-cover
-                flex items-center rounded-full mx-auto w-fit h-[50px] border border-borderColor px-8 py-5
-                text-lg text-white font-semibold transition-all duration-300 ease-in-out
-                ${isConnecting || isInitialLoading ? "animate-pulse" : ""}`}
+            className=" bg-[#a1055c] rounded-lg h-[50px] px-2 font-bold text-xl uppercase min-w-[170px]"
           >
             {getDisplayText()}
           </button>
