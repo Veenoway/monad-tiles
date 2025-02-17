@@ -626,7 +626,7 @@ const PianoTilesGame: React.FC = () => {
       {!isPlaying && !gameOver && (
         <div className="absolute z-50 inset-0 py-10 flex flex-col items-center bg-[url('/bg/main-bg.jpg')] bg-no-repeat bg-bottom">
           <Image
-            src="/logo/logo-monad-tiles.png"
+            src="/logo/new-logo.png"
             alt="lose message"
             width={300}
             height={120}
@@ -721,7 +721,7 @@ const PianoTilesGame: React.FC = () => {
         </div>
         <Image
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-          src="/logo/logo-monad-tiles.png"
+          src="/logo/new-logo.png"
           alt="lose message"
           width={150}
           height={130}
