@@ -7,9 +7,8 @@ export const Home = () => {
     <main
       className="w-screen  min-h-screen pb-[100px] font-montserrat"
       style={{
-        background: `url('/background/team.png'),#0b0433`,
-        backgroundSize: "contain",
-        backgroundPosition: "bottom",
+        background: "url('/background/bg-site.jpg')",
+        backgroundSize: "cover",
         backgroundRepeat: "no-repeat",
         fontFamily: "Boogaloo",
       }}
