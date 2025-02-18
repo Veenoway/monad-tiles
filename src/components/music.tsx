@@ -1,3 +1,4 @@
+"use client";
 import { usePianoRelay } from "@/hook/usePianoTiles";
 import { useModalStore } from "@/store/modalStore";
 import Image from "next/image";
@@ -18,6 +19,7 @@ interface Tile {
   specialBonus?: boolean;
 }
 
+// Example melody array
 const melody: string[] = [];
 
 const bgs: string[] = [
@@ -97,6 +99,9 @@ const gameOverSound: string = "/sound/haha.mp3";
 
 const PianoTilesGame: React.FC = () => {
   const { setIsOpen } = useModalStore();
+  const { address } = useAccount();
+  const { click, submitScore, currentGlobalCount } = usePianoRelay();
+
   const containerHeight = 600;
   const rowHeight = 150;
   const columns = 4;
@@ -125,11 +130,11 @@ const PianoTilesGame: React.FC = () => {
   const [scoreMultiplier, setScoreMultiplier] = useState<number>(1);
   const [currentBonusImage, setCurrentBonusImage] = useState<string>("");
 
-  const bonusTimerRef = useRef<NodeJS.Timeout | null>(null);
-
   const animTimerRef = useRef<NodeJS.Timeout | null>(null);
   const spawnTimerRef = useRef<NodeJS.Timeout | null>(null);
   const accelTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const bonusTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const bonusAudioRefs = useRef<HTMLAudioElement[]>([]);
   const bgMusicRef = useRef<HTMLAudioElement | null>(null);
@@ -148,14 +153,6 @@ const PianoTilesGame: React.FC = () => {
 
   const [clickedTile, setClickedTile] = useState<Tile | null>(null);
 
-  const { address } = useAccount();
-  const { click, submitScore, currentGlobalCount, leaderboard } =
-    usePianoRelay();
-  console.log("current", currentGlobalCount, leaderboard);
-  const toggleMute = () => {
-    setIsMuted((prev) => !prev);
-  };
-
   useEffect(() => {
     audioRef.current = new Audio("/bloop-1.mp3");
     bonusAudioRefs.current = bonusSongs.map((song) => new Audio(song));
@@ -163,17 +160,14 @@ const PianoTilesGame: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    audioRef.current = new Audio("/bloop-1.mp3");
-    bonusAudioRefs.current = bonusSongs.map((song) => new Audio(song));
-  }, []);
-
-  useEffect(() => {
+    // Mute/unmute logic
     if (bgMusicRef.current) bgMusicRef.current.volume = isMuted ? 0 : bgVolume;
     if (menuBgMusicRef.current)
       menuBgMusicRef.current.volume = isMuted ? 0 : bgVolume;
     if (gameOverBgMusicRef.current)
       gameOverBgMusicRef.current.volume = isMuted ? 0 : bgVolume;
     if (audioRef.current) audioRef.current.volume = isMuted ? 0 : sfxVolume;
+
     bonusAudioRefs.current.forEach((audio) => {
       audio.volume = isMuted ? 0 : 1;
     });
@@ -183,6 +177,7 @@ const PianoTilesGame: React.FC = () => {
   }, [isMuted, bgVolume, sfxVolume]);
 
   useEffect(() => {
+    // Switch BG music on index
     if (bgMusicRef.current) bgMusicRef.current.pause();
     bgMusicRef.current = new Audio(bgMusics[bgMusicIndex]);
     bgMusicRef.current.loop = true;
@@ -195,6 +190,7 @@ const PianoTilesGame: React.FC = () => {
   }, [bgMusicIndex, isPlaying, isMuted, bgVolume]);
 
   useEffect(() => {
+    // Menu BG music if not playing
     if (!isPlaying && !gameOver) {
       if (menuBgMusicRef.current) menuBgMusicRef.current.pause();
       menuBgMusicRef.current = new Audio(menuBgMusic);
@@ -218,6 +214,7 @@ const PianoTilesGame: React.FC = () => {
   }, [isPlaying, gameOver, isMuted, bgVolume]);
 
   useEffect(() => {
+    // Game over BG music
     if (gameOver) {
       if (gameOverBgMusicRef.current) gameOverBgMusicRef.current.pause();
       gameOverBgMusicRef.current = new Audio(gameOverBgMusics[0]);
@@ -239,6 +236,7 @@ const PianoTilesGame: React.FC = () => {
     }
   }, [gameOver, isMuted, bgVolume]);
 
+  // Preload images
   useEffect(() => {
     [...bonusBgs, ...bonusImages].forEach((src) => {
       const img = new window.Image();
@@ -273,6 +271,10 @@ const PianoTilesGame: React.FC = () => {
       }
     }
   }, [isPlaying]);
+
+  const toggleMute = () => {
+    setIsMuted((prev) => !prev);
+  };
 
   const handlePlayerClick = async () => {
     if (address) {
@@ -333,6 +335,7 @@ const PianoTilesGame: React.FC = () => {
     if (accelTimerRef.current) clearInterval(accelTimerRef.current);
   };
 
+  // Animation timer
   useEffect(() => {
     if (!isPlaying) return;
     animTimerRef.current = setInterval(() => {
@@ -366,12 +369,14 @@ const PianoTilesGame: React.FC = () => {
     return () => clearInterval(animTimerRef.current as NodeJS.Timeout);
   }, [isPlaying, tileSpeed, containerHeight]);
 
+  // Spawning tiles
   useEffect(() => {
     if (!isPlaying) return;
     spawnTimerRef.current = setInterval(() => {
       const noteValue = melody[spawnIndexRef.current];
       totalTileCountRef.current++;
 
+      // Every 40th tile => specialBonus
       if (
         totalTileCountRef.current !== 0 &&
         totalTileCountRef.current % 40 === 0
@@ -401,7 +406,6 @@ const PianoTilesGame: React.FC = () => {
         if (isBonus) {
           bonusIndex = bonusBgIndexRef.current;
           background = bonusBgs[bonusIndex];
-          console.log("Spawn bonus tile:", bonusIndex, background);
           bonusBgIndexRef.current =
             (bonusBgIndexRef.current + 1) % bonusBgs.length;
         } else {
@@ -424,10 +428,11 @@ const PianoTilesGame: React.FC = () => {
     return () => clearInterval(spawnTimerRef.current as NodeJS.Timeout);
   }, [isPlaying, spawnInterval, rowHeight]);
 
+  // Accelerate
   useEffect(() => {
     if (!isPlaying) return;
     accelTimerRef.current = setInterval(() => {
-      setTileSpeed((prev) => prev * 1.05);
+      setTileSpeed((prev) => prev * 1.1);
       setSpawnInterval((prev) =>
         Math.max(baselineSpawnIntervalRef.current, prev - 50)
       );
@@ -435,6 +440,7 @@ const PianoTilesGame: React.FC = () => {
     return () => clearInterval(accelTimerRef.current as NodeJS.Timeout);
   }, [isPlaying]);
 
+  // Click on columns
   const handleClick = (
     e: React.MouseEvent<HTMLDivElement>,
     colIndex: number
@@ -463,24 +469,28 @@ const PianoTilesGame: React.FC = () => {
     });
   };
 
+  // Handle tile logic
   useEffect(() => {
     if (clickedTile) {
+      // specialBonus => "multiplier" or "slower"
       if (clickedTile.specialBonus) {
         const bonusTypes = ["multiplier", "slower"];
         const chosenType =
           bonusTypes[Math.floor(Math.random() * bonusTypes.length)];
+
+        // If a previous bonus timer is running, clear it
+        if (bonusTimerRef.current) {
+          clearTimeout(bonusTimerRef.current);
+          bonusTimerRef.current = null;
+        }
 
         if (specialBonusAudioRef.current) {
           specialBonusAudioRef.current.currentTime = 0;
           specialBonusAudioRef.current.play();
         }
 
-        if (bonusTimerRef.current) {
-          clearTimeout(bonusTimerRef.current);
-          bonusTimerRef.current = null;
-        }
-
         if (chosenType === "multiplier") {
+          // MULTIPLIER => 30s
           const newMultiplier = Math.random() < 0.5 ? 2 : 4;
           setScoreMultiplier(newMultiplier);
           setCurrentBonusImage(
@@ -489,40 +499,49 @@ const PianoTilesGame: React.FC = () => {
               : "/bonus/bonus-3.png"
           );
           addFeedback(`x${newMultiplier} Multiplier Activated!`, "#FFD700");
+
+          bonusTimerRef.current = setTimeout(() => {
+            setScoreMultiplier(1);
+            setCurrentBonusImage("");
+            addFeedback("Multiplier Ended", "#FF4500");
+            bonusTimerRef.current = null;
+          }, 30000);
         } else {
-          if (currentBonusImage !== "/bonus/bonus-fin-2.png") {
-            setTileSpeed(baselineTileSpeedRef.current * 0.88);
-            setSpawnInterval(baselineSpawnIntervalRef.current / 0.88);
-          }
+          // SLOWER => permanent
+          setTileSpeed((prev) => prev * 0.9);
+          setSpawnInterval((prev) => prev / 0.9);
           setCurrentBonusImage("/bonus/bonus-fin-2.png");
-          addFeedback("Speed Reduced!", "#00FF00");
+          addFeedback("Speed Reduced (permanently)!", "#00FF00");
         }
+
         handleClicks();
-        bonusTimerRef.current = setTimeout(() => {
-          setScoreMultiplier(1);
-          setTileSpeed(baselineTileSpeedRef.current);
-          setSpawnInterval(baselineSpawnIntervalRef.current);
-          setCurrentBonusImage("");
-          addFeedback("Bonus Ended", "#FF4500");
-          bonusTimerRef.current = null;
-        }, 30000);
       } else if (clickedTile.isBonus) {
+        // "regular" bonus tile
         const bonusAudio = bonusAudioRefs.current[clickedTile.bonusIndex || 0];
         bonusAudio.currentTime = 0;
         bonusAudio.play();
+
+        // e.g. +1 life for indexes 2 or 6
         if (clickedTile.bonusIndex === 2 || clickedTile.bonusIndex === 6) {
-          setLives((prev) => prev + 1);
-          addFeedback("+1 Life", "#00FF00");
+          if (lives < 10) {
+            setLives((prev) => prev + 1);
+            addFeedback("+1 Life", "#00FF00");
+          }
         }
       } else {
+        // normal tile
         if (audioRef.current) {
           audioRef.current.currentTime = 0;
           audioRef.current.play();
         }
       }
+
+      // On chain click
       if (address) {
         handlePlayerClick();
       }
+
+      // scoring
       const baseScore = clickedTile.isBonus ? 4 : 1;
       const finalScore = baseScore * scoreMultiplier;
       if (clickedTile.isBonus) {
@@ -532,6 +551,7 @@ const PianoTilesGame: React.FC = () => {
         addFeedback(finalScore > 1 ? `+${finalScore}` : "+1", "#FFF");
       }
       setScore((prev) => prev + finalScore);
+
       setClickedTile(null);
     }
   }, [clickedTile, address, scoreMultiplier, currentBonusImage]);
@@ -614,10 +634,9 @@ const PianoTilesGame: React.FC = () => {
 
   return (
     <div
-      className="rounded-2xl relative overflow-hidden shadow-lg shadow-[rgba(0,0,0,0.2)]"
+      className="rounded-2xl relative overflow-hidden shadow-lg shadow-[rgba(0,0,0,0.2)] mx-auto lg:mt-[60px]"
       style={{
         maxWidth: "400px",
-        margin: "20px auto",
         textAlign: "center",
         fontFamily: "Boogaloo",
       }}
@@ -625,12 +644,7 @@ const PianoTilesGame: React.FC = () => {
       {showSettings && renderSettings()}
       {!isPlaying && !gameOver && (
         <div className="absolute z-50 inset-0 py-10 flex flex-col items-center bg-[url('/bg/main-bg.jpg')] bg-no-repeat bg-bottom">
-          <Image
-            src="/logo/new-logo.png"
-            alt="lose message"
-            width={300}
-            height={120}
-          />
+          <Image src="/logo/new-logo.png" alt="logo" width={300} height={120} />
           <div className="flex items-center gap-10 mt-[90px]">
             <Link
               href="https://x.com/Novee_VeenoX"
@@ -722,7 +736,7 @@ const PianoTilesGame: React.FC = () => {
         <Image
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
           src="/logo/new-logo.png"
-          alt="lose message"
+          alt="logo"
           width={150}
           height={130}
         />
@@ -750,6 +764,8 @@ const PianoTilesGame: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* The game container */}
       <div
         style={{
           position: "relative",
@@ -763,14 +779,16 @@ const PianoTilesGame: React.FC = () => {
           overflow: "hidden",
         }}
       >
+        {/* Bonus animation */}
         <div
           className={`absolute top-[60px] z-[20] w-[350px] ${
             animate ? "animate-bonus" : "offscreen"
           }`}
         >
-          {/* Affiche l'image du bonus en fonction du type actif */}
           {currentBonusImage && <img src={currentBonusImage} alt="Bonus" />}
         </div>
+
+        {/* Feedback messages */}
         {feedbacks.map((fb) => (
           <div
             key={fb.id}
@@ -805,6 +823,8 @@ const PianoTilesGame: React.FC = () => {
             {fb.message}
           </div>
         ))}
+
+        {/* Bottom zone overlay */}
         <div
           className="border-t border-dashed border-[rgba(255,255,255,0.4)] bg-[#836EF9] bg-opacity-20"
           style={{
@@ -817,6 +837,8 @@ const PianoTilesGame: React.FC = () => {
             zIndex: 5,
           }}
         ></div>
+
+        {/* The falling tiles */}
         {rows.map((tile, i) => (
           <img
             alt="tile"
@@ -834,23 +856,28 @@ const PianoTilesGame: React.FC = () => {
             }}
           />
         ))}
+
+        {/* The 4 columns, but narrower. 
+            Each column is 22% wide, offset by 2% + colIndex*24% => total 96% used. */}
         {[...Array(columns)].map((_, colIndex) => (
           <div
             key={colIndex}
             onClick={(e) => handleClick(e, colIndex)}
-            className="border border-[rgba(255,255,255,0.1)]"
+            // Removed big border, replaced with narrower or transparent
             style={{
               position: "absolute",
               top: 0,
-              left: `${(colIndex * 100) / columns}%`,
-              width: `${100 / columns}%`,
+              left: `${2 + colIndex * 24}%`,
+              width: "22%",
               height: "100%",
               cursor: "pointer",
               zIndex: 10,
+              border: "1px solid transparent",
             }}
           ></div>
         ))}
       </div>
+
       <style jsx>{`
         @keyframes popUp {
           0% {

@@ -13,12 +13,15 @@ export const Home = () => {
         fontFamily: "Boogaloo",
       }}
     >
-      <div className="w-full sm:w-[95%] mx-auto sm:pt-10 flex gap-8">
-        <div className="absolute right-5 top-5">
-          <WalletConnection />{" "}
+      <div className="w-full sm:w-[95%] mx-auto lg:pt-10 gap-8">
+        <div className="absolute right-5 top-5 hidden lg:flex">
+          <WalletConnection />
         </div>
         <div className="w-full mx-auto">
           <PianoTilesGame />
+        </div>
+        <div className="flex lg:hidden items-center justify-center mt-5">
+          <WalletConnection />
         </div>
       </div>
     </main>
