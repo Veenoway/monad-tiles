@@ -100,7 +100,7 @@ const gameOverSound: string = "/sound/haha.mp3";
 const PianoTilesGame: React.FC = () => {
   const { setIsOpen } = useModalStore();
   const { address } = useAccount();
-  const { click, submitScore, currentGlobalCount, leaderboard } =
+  const { click, submitScore, userRank, currentGlobalCount, leaderboard } =
     usePianoRelay();
 
   // Pour le jeu
@@ -558,11 +558,13 @@ const PianoTilesGame: React.FC = () => {
 
     const finalValues: [string, number, number][] = [];
     addresses?.forEach((address: string, i: number) => {
-      finalValues.push([addressSlicer(address), scores[i], txns[i]]);
+      finalValues.push([address, scores[i], txns[i]]);
     });
 
     return finalValues;
   }, [leaderboard, address]);
+
+  console.log("currentGlobalCount", currentGlobalCount);
 
   const renderSettings = () => {
     return (
@@ -638,8 +640,8 @@ const PianoTilesGame: React.FC = () => {
         <h2 className="text-4xl text-white font-bold uppercase italic mb-3">
           Leaderboard
         </h2>
-        <div className="w-full max-h-[460px] overflow-y-auto rounded-md p-4">
-          <div className="w-full max-h-[460px] overflow-x-auto">
+        <div className="w-full max-h-[470px] overflow-y-auto hide-scrollbar rounded-md p-4">
+          <div className="w-full max-h-[470px]">
             <table className="min-w-full text-left text-xl">
               <thead className="border-b-2 border-[#a1055c]">
                 <tr>
@@ -654,10 +656,12 @@ const PianoTilesGame: React.FC = () => {
               <tbody>
                 {leaderboardFormatted && leaderboardFormatted.length > 0 ? (
                   leaderboardFormatted.map(
-                    ([address, score, tx], index: number) => (
+                    ([userAddress, score, tx], index: number) => (
                       <tr
                         key={index}
-                        className="border-b border-white/10 text-lg"
+                        className={`border-b border-white/10 text-lg ${
+                          userAddress === address ? "bg-[#a1055b76]" : ""
+                        }`}
                       >
                         <td
                           className={`px-4 py-1.5 font-bold ${
@@ -669,7 +673,7 @@ const PianoTilesGame: React.FC = () => {
                           {index + 1}
                         </td>
                         <td className="px-4 py-1.5">
-                          {address ? address : "Anon"}
+                          {userAddress ? addressSlicer(userAddress) : "Anon"}
                         </td>
                         <td className="px-4 py-1.5  font-bold">{score}</td>
                         <td className="px-4 py-1.5 text-end">{tx}</td>
@@ -687,6 +691,26 @@ const PianoTilesGame: React.FC = () => {
             </table>
           </div>
         </div>
+        {leaderboardFormatted?.find(
+          ([userAddress]) => address === userAddress
+        )?.[0] ? null : (
+          <div className="w-full mt-3 px-4 bg-[#a1055b76] border-t border-white/10 rounded-md">
+            <div className="flex justify-between  text-lg">
+              <span className={`px-4 py-1.5 font-bold text-white/70`}>
+                {userRank || ""}
+              </span>
+              <span className="px-4 py-1.5">
+                {address ? addressSlicer(address) : "Anon"}
+              </span>
+              <span className="px-4 py-1.5 font-bold">
+                {(currentGlobalCount as [number])?.[0]}
+              </span>
+              <span className="px-4 py-1.5 text-end">
+                {(currentGlobalCount as [number, number, number])?.[2]}
+              </span>
+            </div>
+          </div>
+        )}
         <button
           onClick={() => setShowLeaderboard(false)}
           className="mt-10 px-4 py-2 uppercase text-2xl hover:scale-95 transition-all duration-200 ease-in-out bg-[#a1055c] text-white rounded-md"

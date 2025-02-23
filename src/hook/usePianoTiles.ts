@@ -2,7 +2,7 @@ import {
   PIANO_CONTRACT_ABI,
   PIANO_CONTRACT_ADDRESS,
 } from "@/constant/pianoTiles";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import { useAccount, useReadContract } from "wagmi";
 
 type UsePianoRelayReturn = {
@@ -13,6 +13,7 @@ type UsePianoRelayReturn = {
   isLoading: boolean;
   error: string | null;
   txHashes: string[];
+  userRank: number;
 };
 
 export function usePianoRelay(): UsePianoRelayReturn {
@@ -25,6 +26,13 @@ export function usePianoRelay(): UsePianoRelayReturn {
       functionName: "players",
       args: address ? [address] : undefined,
     });
+
+  const { data: userRank } = useReadContract({
+    address: PIANO_CONTRACT_ADDRESS,
+    abi: PIANO_CONTRACT_ABI,
+    functionName: "getRank",
+    args: [address],
+  });
 
   const { data: leaderboard, refetch: fetchLeaderboard } = useReadContract({
     address: PIANO_CONTRACT_ADDRESS,
@@ -94,12 +102,6 @@ export function usePianoRelay(): UsePianoRelayReturn {
     [address, refetchGlobalCount, fetchLeaderboard]
   );
 
-  useEffect(() => {
-    if (txHashes.length > 0) {
-      console.log("Transactions effectuées :", txHashes);
-    }
-  }, [txHashes]);
-
   return {
     click,
     submitScore,
@@ -108,5 +110,6 @@ export function usePianoRelay(): UsePianoRelayReturn {
     isLoading,
     error,
     txHashes,
+    userRank: userRank as number,
   };
 }
