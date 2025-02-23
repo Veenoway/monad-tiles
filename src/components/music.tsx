@@ -792,24 +792,24 @@ const PianoTilesGame: React.FC = () => {
             </p>
             <p className="text-6xl text-cyan-300 mt-2 font-bold">{score}</p>
           </div>
-          <button
-            onClick={startGame}
-            className="font-bold uppercase text-3xl mt-[70px] bg-[#a1055c] rounded-md text-white px-4 py-2"
-          >
-            Replay
-          </button>
-          <div className="flex gap-4 mt-4">
+          <div className="flex items-center gap-5 mt-[100px]">
             <button
               onClick={() => setShowSettings(true)}
-              className="px-4 py-2 bg-[#a1055c] uppercase text-xl text-white rounded-md"
+              className="px-3 py-1.5 bg-[#a1055c] text-3xl h-[50px] uppercase text-white rounded-md"
             >
-              Settings
+              <IoSettingsSharp />
+            </button>
+            <button
+              onClick={startGame}
+              className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out"
+            >
+              REPLAY
             </button>
             <button
               onClick={() => setShowLeaderboard(true)}
-              className="px-4 py-2 bg-[#a1055c] uppercase text-xl text-white rounded-md"
+              className="px-3 py-1.5 bg-[#a1055c] text-4xl h-[50px] uppercase text-white rounded-md"
             >
-              Leaderboard
+              <FaRankingStar />
             </button>
           </div>
         </div>
