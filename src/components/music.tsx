@@ -757,7 +757,14 @@ const PianoTilesGame: React.FC = () => {
           </div>{" "}
           <div className="flex gap-4 mt-[120px]">
             <button
-              onClick={() => setShowSettings(true)}
+              onClick={() => {
+                if (!address) {
+                  setIsOpen(true);
+                  return;
+                } else {
+                  setShowSettings(true);
+                }
+              }}
               className="px-3 py-1.5 bg-[#a1055c] text-3xl uppercase text-white rounded-md"
             >
               <IoSettingsSharp />
@@ -769,7 +776,14 @@ const PianoTilesGame: React.FC = () => {
               Start
             </button>
             <button
-              onClick={() => setShowLeaderboard(true)}
+              onClick={() => {
+                if (!address) {
+                  setIsOpen(true);
+                  return;
+                } else {
+                  setShowLeaderboard(true);
+                }
+              }}
               className="px-3 py-1.5 bg-[#a1055c] text-4xl uppercase text-white rounded-md"
             >
               <FaRankingStar />
