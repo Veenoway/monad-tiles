@@ -19,7 +19,6 @@ interface Tile {
   specialBonus?: boolean;
 }
 
-// Example melody array
 const melody: string[] = [];
 
 const bgs: string[] = [
@@ -55,7 +54,7 @@ const bonusImages: string[] = [
   "/bonus/pfp-tunez.png",
   "/bonus/pfp-mike.png",
   "/bonus/pfp-keone.png",
-  "/bonus/pfp-sailornini.png",
+  "/bonus/pfp-thisisfin.png",
   "/bonus/pfp-thisisfin.png",
   "/bonus/pfp-john.png",
   "/bonus/pfp-fitz.png",
@@ -112,13 +111,16 @@ const PianoTilesGame: React.FC = () => {
   const baselineTileSpeedRef = useRef<number>(computedInitialSpeed);
   const baselineSpawnIntervalRef = useRef<number>(600);
 
+  // On souhaite un écart fixe de 20px entre les tuiles.
+  const gap = 20;
+
   const [rows, setRows] = useState<Tile[]>([]);
   const [score, setScore] = useState<number>(0);
   const [lives, setLives] = useState<number>(10);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [tileSpeed, setTileSpeed] = useState<number>(computedInitialSpeed);
-  const [spawnInterval, setSpawnInterval] = useState<number>(600);
+  const [, setSpawnInterval] = useState<number>(600);
   const [feedbacks, setFeedbacks] = useState<
     { id: number; message: string; color: string; bgImage: string | null }[]
   >([]);
@@ -131,7 +133,7 @@ const PianoTilesGame: React.FC = () => {
   const [currentBonusImage, setCurrentBonusImage] = useState<string>("");
 
   const animTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const spawnTimerRef = useRef<NodeJS.Timeout | null>(null);
+  // Nous supprimons le timer de spawn car le spawn s'effectuera en fonction du nombre de tuiles.
   const accelTimerRef = useRef<NodeJS.Timeout | null>(null);
   const bonusTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -153,6 +155,7 @@ const PianoTilesGame: React.FC = () => {
 
   const [clickedTile, setClickedTile] = useState<Tile | null>(null);
 
+  // Préchargement audio
   useEffect(() => {
     audioRef.current = new Audio("/bloop-1.mp3");
     bonusAudioRefs.current = bonusSongs.map((song) => new Audio(song));
@@ -160,14 +163,12 @@ const PianoTilesGame: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Mute/unmute logic
     if (bgMusicRef.current) bgMusicRef.current.volume = isMuted ? 0 : bgVolume;
     if (menuBgMusicRef.current)
       menuBgMusicRef.current.volume = isMuted ? 0 : bgVolume;
     if (gameOverBgMusicRef.current)
       gameOverBgMusicRef.current.volume = isMuted ? 0 : bgVolume;
     if (audioRef.current) audioRef.current.volume = isMuted ? 0 : sfxVolume;
-
     bonusAudioRefs.current.forEach((audio) => {
       audio.volume = isMuted ? 0 : 1;
     });
@@ -177,7 +178,6 @@ const PianoTilesGame: React.FC = () => {
   }, [isMuted, bgVolume, sfxVolume]);
 
   useEffect(() => {
-    // Switch BG music on index
     if (bgMusicRef.current) bgMusicRef.current.pause();
     bgMusicRef.current = new Audio(bgMusics[bgMusicIndex]);
     bgMusicRef.current.loop = true;
@@ -190,7 +190,6 @@ const PianoTilesGame: React.FC = () => {
   }, [bgMusicIndex, isPlaying, isMuted, bgVolume]);
 
   useEffect(() => {
-    // Menu BG music if not playing
     if (!isPlaying && !gameOver) {
       if (menuBgMusicRef.current) menuBgMusicRef.current.pause();
       menuBgMusicRef.current = new Audio(menuBgMusic);
@@ -214,7 +213,6 @@ const PianoTilesGame: React.FC = () => {
   }, [isPlaying, gameOver, isMuted, bgVolume]);
 
   useEffect(() => {
-    // Game over BG music
     if (gameOver) {
       if (gameOverBgMusicRef.current) gameOverBgMusicRef.current.pause();
       gameOverBgMusicRef.current = new Audio(gameOverBgMusics[0]);
@@ -236,7 +234,6 @@ const PianoTilesGame: React.FC = () => {
     }
   }, [gameOver, isMuted, bgVolume]);
 
-  // Preload images
   useEffect(() => {
     [...bonusBgs, ...bonusImages].forEach((src) => {
       const img = new window.Image();
@@ -276,14 +273,74 @@ const PianoTilesGame: React.FC = () => {
     setIsMuted((prev) => !prev);
   };
 
-  const handlePlayerClick = async () => {
-    if (address) {
-      const times = scoreMultiplier;
-      await Promise.all(
-        Array.from({ length: times }).map(() => click(address))
-      );
+  // Fonction de création d'une nouvelle tuile en calculant sa position
+  const spawnTile = () => {
+    // Pour conserver un espacement constant, on place la nouvelle tuile
+    // exactement (rowHeight + gap) au-dessus de la tuile la plus haute.
+    const currentMinTop =
+      rows.length > 0 ? Math.min(...rows.map((tile) => tile.top)) : 0;
+    const newTileTop =
+      rows.length > 0 ? currentMinTop - (rowHeight + gap) : -(rowHeight + gap);
+
+    const noteValue = melody[spawnIndexRef.current];
+    totalTileCountRef.current++;
+
+    let newTile: Tile;
+    if (totalTileCountRef.current % 40 === 0) {
+      newTile = {
+        id: Date.now() + Math.random(),
+        top: newTileTop,
+        blackColumn: Math.floor(Math.random() * columns),
+        note: noteValue,
+        isBonus: false,
+        specialBonus: true,
+        background: "/bonus/star.gif",
+        bonusIndex: null,
+      };
+    } else {
+      let isBonus: boolean;
+      if (normalTileCountRef.current >= 10) {
+        isBonus = true;
+        normalTileCountRef.current = 0;
+      } else {
+        isBonus = Math.random() < 0.1;
+        if (!isBonus) normalTileCountRef.current += 1;
+      }
+      let background: string;
+      let bonusIndex: number | null = null;
+      if (isBonus) {
+        bonusIndex = bonusBgIndexRef.current;
+        background = bonusBgs[bonusIndex];
+        bonusBgIndexRef.current =
+          (bonusBgIndexRef.current + 1) % bonusBgs.length;
+      } else {
+        background = bgs[bgIndexRef.current];
+        bgIndexRef.current = (bgIndexRef.current + 1) % bgs.length;
+      }
+      newTile = {
+        id: Date.now() + Math.random(),
+        top: newTileTop,
+        blackColumn: Math.floor(Math.random() * columns),
+        note: noteValue,
+        isBonus,
+        background,
+        bonusIndex,
+      };
     }
+    spawnIndexRef.current = (spawnIndexRef.current + 1) % melody.length;
+    setRows((prev) => [...prev, newTile]);
   };
+
+  // À chaque mise à jour des tuiles, on vérifie si leur nombre est inférieur
+  // au nombre cible. Si c'est le cas, on ajoute de nouvelles tuiles pour combler.
+  useEffect(() => {
+    if (!isPlaying) return;
+    // Calcul du nombre de tuiles nécessaire pour couvrir le conteneur plus une marge
+    const target = Math.ceil(containerHeight / (rowHeight + gap)) + 2;
+    if (rows.length < target) {
+      spawnTile();
+    }
+  }, [rows, isPlaying, containerHeight, rowHeight, gap]);
 
   const addFeedback = (
     message: string,
@@ -304,7 +361,6 @@ const PianoTilesGame: React.FC = () => {
       return;
     }
     if (animTimerRef.current) clearInterval(animTimerRef.current);
-    if (spawnTimerRef.current) clearInterval(spawnTimerRef.current);
     if (accelTimerRef.current) clearInterval(accelTimerRef.current);
     setRows([]);
     setScore(0);
@@ -319,6 +375,7 @@ const PianoTilesGame: React.FC = () => {
     totalTileCountRef.current = 0;
     bonusSongIndexRef.current = 0;
     setClickedTile(null);
+    // Aucune variable de position n'est nécessaire ici puisque le spawn se base sur le tableau existant
     setIsPlaying(true);
     if (menuBgMusicRef.current) {
       menuBgMusicRef.current.pause();
@@ -331,11 +388,10 @@ const PianoTilesGame: React.FC = () => {
     setIsPlaying(false);
     setGameOver(true);
     if (animTimerRef.current) clearInterval(animTimerRef.current);
-    if (spawnTimerRef.current) clearInterval(spawnTimerRef.current);
     if (accelTimerRef.current) clearInterval(accelTimerRef.current);
   };
 
-  // Animation timer
+  // Animation : déplace toutes les tuiles vers le bas et supprime celles hors écran
   useEffect(() => {
     if (!isPlaying) return;
     animTimerRef.current = setInterval(() => {
@@ -369,66 +425,7 @@ const PianoTilesGame: React.FC = () => {
     return () => clearInterval(animTimerRef.current as NodeJS.Timeout);
   }, [isPlaying, tileSpeed, containerHeight]);
 
-  // Spawning tiles
-  useEffect(() => {
-    if (!isPlaying) return;
-    spawnTimerRef.current = setInterval(() => {
-      const noteValue = melody[spawnIndexRef.current];
-      totalTileCountRef.current++;
-
-      // Every 40th tile => specialBonus
-      if (
-        totalTileCountRef.current !== 0 &&
-        totalTileCountRef.current % 40 === 0
-      ) {
-        const newTile: Tile = {
-          id: Date.now() + Math.random(),
-          top: -rowHeight,
-          blackColumn: Math.floor(Math.random() * columns),
-          note: noteValue,
-          isBonus: false,
-          specialBonus: true,
-          background: "/bonus/star.gif",
-          bonusIndex: null,
-        };
-        setRows((prev) => [...prev, newTile]);
-      } else {
-        let isBonus: boolean;
-        if (normalTileCountRef.current >= 10) {
-          isBonus = true;
-          normalTileCountRef.current = 0;
-        } else {
-          isBonus = Math.random() < 0.1;
-          if (!isBonus) normalTileCountRef.current += 1;
-        }
-        let background: string;
-        let bonusIndex: number | null = null;
-        if (isBonus) {
-          bonusIndex = bonusBgIndexRef.current;
-          background = bonusBgs[bonusIndex];
-          bonusBgIndexRef.current =
-            (bonusBgIndexRef.current + 1) % bonusBgs.length;
-        } else {
-          background = bgs[bgIndexRef.current];
-          bgIndexRef.current = (bgIndexRef.current + 1) % bgs.length;
-        }
-        const newTile: Tile = {
-          id: Date.now() + Math.random(),
-          top: -rowHeight,
-          blackColumn: Math.floor(Math.random() * columns),
-          note: noteValue,
-          isBonus: isBonus,
-          background: background,
-          bonusIndex: bonusIndex,
-        };
-        setRows((prev) => [...prev, newTile]);
-      }
-      spawnIndexRef.current = (spawnIndexRef.current + 1) % melody.length;
-    }, spawnInterval);
-    return () => clearInterval(spawnTimerRef.current as NodeJS.Timeout);
-  }, [isPlaying, spawnInterval, rowHeight]);
-
-  // Accelerate
+  // Accélération progressive
   useEffect(() => {
     if (!isPlaying) return;
     accelTimerRef.current = setInterval(() => {
@@ -440,14 +437,14 @@ const PianoTilesGame: React.FC = () => {
     return () => clearInterval(accelTimerRef.current as NodeJS.Timeout);
   }, [isPlaying]);
 
-  // Click on columns
+  // Gestion du clic sur une colonne
   const handleClick = (
     e: React.MouseEvent<HTMLDivElement>,
     colIndex: number
   ) => {
     e.stopPropagation();
     setRows((prevRows) => {
-      const tolerance = 30;
+      const tolerance = 50;
       const hitZoneStart = containerHeight - rowHeight - tolerance;
       const hitZoneEnd = containerHeight + tolerance;
       const tileIndex = prevRows.findIndex(
@@ -469,16 +466,15 @@ const PianoTilesGame: React.FC = () => {
     });
   };
 
-  // Handle tile logic
+  // Gestion du clic sur une tuile
   useEffect(() => {
     if (clickedTile) {
-      // specialBonus => "multiplier" or "slower"
+      let txCount = 0;
       if (clickedTile.specialBonus) {
         const bonusTypes = ["multiplier", "slower"];
         const chosenType =
           bonusTypes[Math.floor(Math.random() * bonusTypes.length)];
 
-        // If a previous bonus timer is running, clear it
         if (bonusTimerRef.current) {
           clearTimeout(bonusTimerRef.current);
           bonusTimerRef.current = null;
@@ -490,7 +486,6 @@ const PianoTilesGame: React.FC = () => {
         }
 
         if (chosenType === "multiplier") {
-          // MULTIPLIER => 30s
           const newMultiplier = Math.random() < 0.5 ? 2 : 4;
           setScoreMultiplier(newMultiplier);
           setCurrentBonusImage(
@@ -506,42 +501,43 @@ const PianoTilesGame: React.FC = () => {
             addFeedback("Multiplier Ended", "#FF4500");
             bonusTimerRef.current = null;
           }, 30000);
+
+          txCount = newMultiplier === 2 ? 4 : 8;
         } else {
-          // SLOWER => permanent
           setTileSpeed((prev) => prev * 0.9);
           setSpawnInterval((prev) => prev / 0.9);
           setCurrentBonusImage("/bonus/bonus-fin-2.png");
           addFeedback("Speed Reduced (permanently)!", "#00FF00");
+
+          txCount = 4;
         }
 
+        // Petit effet d'animation
         handleClicks();
       } else if (clickedTile.isBonus) {
-        // "regular" bonus tile
         const bonusAudio = bonusAudioRefs.current[clickedTile.bonusIndex || 0];
         bonusAudio.currentTime = 0;
         bonusAudio.play();
 
-        // e.g. +1 life for indexes 2 or 6
         if (clickedTile.bonusIndex === 2 || clickedTile.bonusIndex === 6) {
           if (lives < 10) {
             setLives((prev) => prev + 1);
             addFeedback("+1 Life", "#00FF00");
           }
         }
+
+        txCount = 4;
       } else {
-        // normal tile
         if (audioRef.current) {
           audioRef.current.currentTime = 0;
           audioRef.current.play();
         }
+        txCount = 2;
       }
 
-      // On chain click
-      if (address) {
-        handlePlayerClick();
-      }
+      txCount *= scoreMultiplier;
+      triggerTX(txCount);
 
-      // scoring
       const baseScore = clickedTile.isBonus ? 4 : 1;
       const finalScore = baseScore * scoreMultiplier;
       if (clickedTile.isBonus) {
@@ -550,11 +546,19 @@ const PianoTilesGame: React.FC = () => {
       } else {
         addFeedback(finalScore > 1 ? `+${finalScore}` : "+1", "#FFF");
       }
-      setScore((prev) => prev + finalScore);
 
+      setScore((prev) => prev + finalScore);
       setClickedTile(null);
     }
   }, [clickedTile, address, scoreMultiplier, currentBonusImage]);
+
+  const triggerTX = async (txCount: number) => {
+    if (address) {
+      await Promise.all(
+        Array.from({ length: txCount }).map(() => click(address))
+      );
+    }
+  };
 
   const renderSettings = () => {
     return (
@@ -765,7 +769,7 @@ const PianoTilesGame: React.FC = () => {
         </div>
       </div>
 
-      {/* The game container */}
+      {/* Conteneur du jeu */}
       <div
         style={{
           position: "relative",
@@ -779,7 +783,7 @@ const PianoTilesGame: React.FC = () => {
           overflow: "hidden",
         }}
       >
-        {/* Bonus animation */}
+        {/* Animation du bonus */}
         <div
           className={`absolute top-[60px] z-[20] w-[350px] ${
             animate ? "animate-bonus" : "offscreen"
@@ -788,7 +792,7 @@ const PianoTilesGame: React.FC = () => {
           {currentBonusImage && <img src={currentBonusImage} alt="Bonus" />}
         </div>
 
-        {/* Feedback messages */}
+        {/* Messages de feedback */}
         {feedbacks.map((fb) => (
           <div
             key={fb.id}
@@ -824,7 +828,7 @@ const PianoTilesGame: React.FC = () => {
           </div>
         ))}
 
-        {/* Bottom zone overlay */}
+        {/* Ligne de séparation en bas */}
         <div
           className="border-t border-dashed border-[rgba(255,255,255,0.4)] bg-[#836EF9] bg-opacity-20"
           style={{
@@ -838,7 +842,7 @@ const PianoTilesGame: React.FC = () => {
           }}
         ></div>
 
-        {/* The falling tiles */}
+        {/* Affichage des tuiles */}
         {rows.map((tile, i) => (
           <img
             alt="tile"
@@ -857,13 +861,10 @@ const PianoTilesGame: React.FC = () => {
           />
         ))}
 
-        {/* The 4 columns, but narrower. 
-            Each column is 22% wide, offset by 2% + colIndex*24% => total 96% used. */}
         {[...Array(columns)].map((_, colIndex) => (
           <div
             key={colIndex}
             onClick={(e) => handleClick(e, colIndex)}
-            // Removed big border, replaced with narrower or transparent
             style={{
               position: "absolute",
               top: 0,

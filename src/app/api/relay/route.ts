@@ -6,8 +6,7 @@ import { NextResponse } from "next/server";
 import { Chain, createWalletClient, getContract, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-const RELAYER_PRIVATE_KEY =
-  "0x1dcf6bcbc3557478e456c215e7c51f836cd41ca65b59f152c80694e7edebb49a";
+const RELAYER_PRIVATE_KEY = process.env.RELAYER_PK as `0x${string}`;
 const RPC_URL =
   "https://testnet-rpc2.monad.xyz/52227f026fa8fac9e2014c58fbf5643369b3bfc6";
 const CHAIN_ID = 10143;
