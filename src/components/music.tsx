@@ -3,10 +3,11 @@ import { usePianoRelay } from "@/hook/usePianoTiles";
 import { useModalStore } from "@/store/modalStore";
 import Image from "next/image";
 import Link from "next/link";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FaRankingStar } from "react-icons/fa6";
 import { GoMute, GoUnmute } from "react-icons/go";
+import { IoSettingsSharp } from "react-icons/io5";
 import { useAccount } from "wagmi";
-
 interface Tile {
   id: number;
   top: number;
@@ -99,8 +100,10 @@ const gameOverSound: string = "/sound/haha.mp3";
 const PianoTilesGame: React.FC = () => {
   const { setIsOpen } = useModalStore();
   const { address } = useAccount();
-  const { click, submitScore, currentGlobalCount } = usePianoRelay();
+  const { click, submitScore, currentGlobalCount, leaderboard } =
+    usePianoRelay();
 
+  // Pour le jeu
   const containerHeight = 600;
   const rowHeight = 150;
   const columns = 4;
@@ -111,7 +114,7 @@ const PianoTilesGame: React.FC = () => {
   const baselineTileSpeedRef = useRef<number>(computedInitialSpeed);
   const baselineSpawnIntervalRef = useRef<number>(600);
 
-  // On souhaite un écart fixe de 20px entre les tuiles.
+  // Écart fixe entre tuiles
   const gap = 60;
 
   const [rows, setRows] = useState<Tile[]>([]);
@@ -129,11 +132,11 @@ const PianoTilesGame: React.FC = () => {
   const [bgVolume, setBgVolume] = useState<number>(0.3);
   const [sfxVolume, setSfxVolume] = useState<number>(0.3);
   const [showSettings, setShowSettings] = useState<boolean>(false);
+  const [showLeaderboard, setShowLeaderboard] = useState<boolean>(false);
   const [scoreMultiplier, setScoreMultiplier] = useState<number>(1);
   const [currentBonusImage, setCurrentBonusImage] = useState<string>("");
 
   const animTimerRef = useRef<NodeJS.Timeout | null>(null);
-  // Nous supprimons le timer de spawn car le spawn s'effectuera en fonction du nombre de tuiles.
   const accelTimerRef = useRef<NodeJS.Timeout | null>(null);
   const bonusTimerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -155,7 +158,6 @@ const PianoTilesGame: React.FC = () => {
 
   const [clickedTile, setClickedTile] = useState<Tile | null>(null);
 
-  // Préchargement audio
   useEffect(() => {
     audioRef.current = new Audio("/bloop-1.mp3");
     bonusAudioRefs.current = bonusSongs.map((song) => new Audio(song));
@@ -273,10 +275,8 @@ const PianoTilesGame: React.FC = () => {
     setIsMuted((prev) => !prev);
   };
 
-  // Fonction de création d'une nouvelle tuile en calculant sa position
+  // Fonction de création d'une nouvelle tuile
   const spawnTile = () => {
-    // Pour conserver un espacement constant, on place la nouvelle tuile
-    // exactement (rowHeight + gap) au-dessus de la tuile la plus haute.
     const currentMinTop =
       rows.length > 0 ? Math.min(...rows.map((tile) => tile.top)) : 0;
     const newTileTop =
@@ -331,11 +331,9 @@ const PianoTilesGame: React.FC = () => {
     setRows((prev) => [...prev, newTile]);
   };
 
-  // À chaque mise à jour des tuiles, on vérifie si leur nombre est inférieur
-  // au nombre cible. Si c'est le cas, on ajoute de nouvelles tuiles pour combler.
+  // Vérification automatique pour maintenir le nombre de tuiles
   useEffect(() => {
     if (!isPlaying) return;
-    // Calcul du nombre de tuiles nécessaire pour couvrir le conteneur plus une marge
     const target = Math.ceil(containerHeight / (rowHeight + gap)) + 2;
     if (rows.length < target) {
       spawnTile();
@@ -375,7 +373,6 @@ const PianoTilesGame: React.FC = () => {
     totalTileCountRef.current = 0;
     bonusSongIndexRef.current = 0;
     setClickedTile(null);
-    // Aucune variable de position n'est nécessaire ici puisque le spawn se base sur le tableau existant
     setIsPlaying(true);
     if (menuBgMusicRef.current) {
       menuBgMusicRef.current.pause();
@@ -391,7 +388,6 @@ const PianoTilesGame: React.FC = () => {
     if (accelTimerRef.current) clearInterval(accelTimerRef.current);
   };
 
-  // Animation : déplace toutes les tuiles vers le bas et supprime celles hors écran
   useEffect(() => {
     if (!isPlaying) return;
     animTimerRef.current = setInterval(() => {
@@ -425,7 +421,6 @@ const PianoTilesGame: React.FC = () => {
     return () => clearInterval(animTimerRef.current as NodeJS.Timeout);
   }, [isPlaying, tileSpeed, containerHeight]);
 
-  // Accélération progressive
   useEffect(() => {
     if (!isPlaying) return;
     accelTimerRef.current = setInterval(() => {
@@ -437,7 +432,6 @@ const PianoTilesGame: React.FC = () => {
     return () => clearInterval(accelTimerRef.current as NodeJS.Timeout);
   }, [isPlaying]);
 
-  // Gestion du clic sur une colonne
   const handleClick = (
     e: React.MouseEvent<HTMLDivElement>,
     colIndex: number
@@ -466,7 +460,6 @@ const PianoTilesGame: React.FC = () => {
     });
   };
 
-  // Gestion du clic sur une tuile
   useEffect(() => {
     if (clickedTile) {
       let txCount = 0;
@@ -474,17 +467,14 @@ const PianoTilesGame: React.FC = () => {
         const bonusTypes = ["multiplier", "slower"];
         const chosenType =
           bonusTypes[Math.floor(Math.random() * bonusTypes.length)];
-
         if (bonusTimerRef.current) {
           clearTimeout(bonusTimerRef.current);
           bonusTimerRef.current = null;
         }
-
         if (specialBonusAudioRef.current) {
           specialBonusAudioRef.current.currentTime = 0;
           specialBonusAudioRef.current.play();
         }
-
         if (chosenType === "multiplier") {
           const newMultiplier = Math.random() < 0.5 ? 2 : 4;
           setScoreMultiplier(newMultiplier);
@@ -494,38 +484,31 @@ const PianoTilesGame: React.FC = () => {
               : "/bonus/bonus-3.png"
           );
           addFeedback(`x${newMultiplier} Multiplier Activated!`, "#FFD700");
-
           bonusTimerRef.current = setTimeout(() => {
             setScoreMultiplier(1);
             setCurrentBonusImage("");
             addFeedback("Multiplier Ended", "#FF4500");
             bonusTimerRef.current = null;
           }, 30000);
-
           txCount = newMultiplier === 2 ? 4 : 8;
         } else {
           setTileSpeed((prev) => prev * 0.9);
           setSpawnInterval((prev) => prev / 0.9);
           setCurrentBonusImage("/bonus/bonus-fin-2.png");
           addFeedback("Speed Reduced (permanently)!", "#00FF00");
-
           txCount = 4;
         }
-
-        // Petit effet d'animation
         handleClicks();
       } else if (clickedTile.isBonus) {
         const bonusAudio = bonusAudioRefs.current[clickedTile.bonusIndex || 0];
         bonusAudio.currentTime = 0;
         bonusAudio.play();
-
         if (clickedTile.bonusIndex === 2 || clickedTile.bonusIndex === 6) {
           if (lives < 10) {
             setLives((prev) => prev + 1);
             addFeedback("+1 Life", "#00FF00");
           }
         }
-
         txCount = 4;
       } else {
         if (audioRef.current) {
@@ -534,10 +517,8 @@ const PianoTilesGame: React.FC = () => {
         }
         txCount = 2;
       }
-
       txCount *= scoreMultiplier;
       triggerTX(txCount);
-
       const baseScore = clickedTile.isBonus ? 4 : 1;
       const finalScore = baseScore * scoreMultiplier;
       if (clickedTile.isBonus) {
@@ -546,7 +527,6 @@ const PianoTilesGame: React.FC = () => {
       } else {
         addFeedback(finalScore > 1 ? `+${finalScore}` : "+1", "#FFF");
       }
-
       setScore((prev) => prev + finalScore);
       setClickedTile(null);
     }
@@ -559,6 +539,30 @@ const PianoTilesGame: React.FC = () => {
       );
     }
   };
+
+  const addressSlicer = (address?: string, endCut = 4) => {
+    if (!address) return "...";
+    return `${address.slice(0, 4)}...${address.slice(-endCut)}`;
+  };
+
+  const leaderboardFormatted = useMemo(() => {
+    if (!leaderboard) return;
+    const leaderboardBuffer: [string[], number[], number[]] = leaderboard as [
+      string[],
+      number[],
+      number[]
+    ];
+    const addresses = leaderboardBuffer?.[0];
+    const scores = leaderboardBuffer?.[1];
+    const txns = leaderboardBuffer?.[2];
+
+    const finalValues: [string, number, number][] = [];
+    addresses?.forEach((address: string, i: number) => {
+      finalValues.push([addressSlicer(address), scores[i], txns[i]]);
+    });
+
+    return finalValues;
+  }, [leaderboard, address]);
 
   const renderSettings = () => {
     return (
@@ -628,6 +632,71 @@ const PianoTilesGame: React.FC = () => {
     );
   };
 
+  const renderLeaderboard = () => {
+    return (
+      <div className="absolute z-[11000] inset-0 bg-[rgba(11,4,51,0.95)] flex flex-col items-center justify-center p-4 overflow-y-auto">
+        <h2 className="text-4xl text-white font-bold uppercase italic mb-3">
+          Leaderboard
+        </h2>
+        <div className="w-full max-h-[460px] overflow-y-auto rounded-md p-4">
+          <div className="w-full max-h-[460px] overflow-x-auto">
+            <table className="min-w-full text-left text-xl">
+              <thead className="border-b-2 border-[#a1055c]">
+                <tr>
+                  <th className="px-4 py-2 font-thin text-white">Rank</th>
+                  <th className="px-4 py-2 font-thin text-white">Address</th>
+                  <th className="px-4 py-2 font-thin text-white">Score</th>
+                  <th className="px-4 py-2 font-thin text-white text-end">
+                    Txn
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {leaderboardFormatted && leaderboardFormatted.length > 0 ? (
+                  leaderboardFormatted.map(
+                    ([address, score, tx], index: number) => (
+                      <tr
+                        key={index}
+                        className="border-b border-white/10 text-lg"
+                      >
+                        <td
+                          className={`px-4 py-1.5 font-bold ${
+                            index + 1 < 4
+                              ? "text-[rgb(199,199,64)]"
+                              : "text-white/70"
+                          }`}
+                        >
+                          {index + 1}
+                        </td>
+                        <td className="px-4 py-1.5">
+                          {address ? address : "Anon"}
+                        </td>
+                        <td className="px-4 py-1.5  font-bold">{score}</td>
+                        <td className="px-4 py-1.5 text-end">{tx}</td>
+                      </tr>
+                    )
+                  )
+                ) : (
+                  <tr>
+                    <td className="px-4 py-2 text-gray-500" colSpan={4}>
+                      No leaderboard data available
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <button
+          onClick={() => setShowLeaderboard(false)}
+          className="mt-10 px-4 py-2 uppercase text-2xl hover:scale-95 transition-all duration-200 ease-in-out bg-[#a1055c] text-white rounded-md"
+        >
+          Close
+        </button>
+      </div>
+    );
+  };
+
   const [animate, setAnimate] = useState(false);
   const handleClicks = () => {
     setAnimate(false);
@@ -646,6 +715,7 @@ const PianoTilesGame: React.FC = () => {
       }}
     >
       {showSettings && renderSettings()}
+      {showLeaderboard && renderLeaderboard()}
       {!isPlaying && !gameOver && (
         <div className="absolute z-50 inset-0 py-10 flex flex-col items-center bg-[url('/bg/main-bg.jpg')] bg-no-repeat bg-bottom">
           <Image src="/logo/new-logo.png" alt="logo" width={300} height={120} />
@@ -684,19 +754,27 @@ const PianoTilesGame: React.FC = () => {
                 </p>
               </div>
             </Link>
+          </div>{" "}
+          <div className="flex gap-4 mt-[120px]">
+            <button
+              onClick={() => setShowSettings(true)}
+              className="px-3 py-1.5 bg-[#a1055c] text-3xl uppercase text-white rounded-md"
+            >
+              <IoSettingsSharp />
+            </button>
+            <button
+              onClick={startGame}
+              className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out"
+            >
+              Start
+            </button>
+            <button
+              onClick={() => setShowLeaderboard(true)}
+              className="px-3 py-1.5 bg-[#a1055c] text-4xl uppercase text-white rounded-md"
+            >
+              <FaRankingStar />
+            </button>
           </div>
-          <button
-            onClick={startGame}
-            className="font-bold uppercase text-3xl mt-[120px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out"
-          >
-            Start
-          </button>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="mt-4 px-3 py-1.5 bg-[#a1055c] text-lg uppercase text-white rounded-md"
-          >
-            Settings
-          </button>
         </div>
       )}
       {gameOver && (
@@ -720,12 +798,20 @@ const PianoTilesGame: React.FC = () => {
           >
             Replay
           </button>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="mt-4 px-4 py-2 bg-[#a1055c] uppercase text-xl text-white rounded-md"
-          >
-            Settings
-          </button>
+          <div className="flex gap-4 mt-4">
+            <button
+              onClick={() => setShowSettings(true)}
+              className="px-4 py-2 bg-[#a1055c] uppercase text-xl text-white rounded-md"
+            >
+              Settings
+            </button>
+            <button
+              onClick={() => setShowLeaderboard(true)}
+              className="px-4 py-2 bg-[#a1055c] uppercase text-xl text-white rounded-md"
+            >
+              Leaderboard
+            </button>
+          </div>
         </div>
       )}
       <div className="w-full justify-between flex items-center bg-[#190e59] py-5 px-5 relative">
@@ -769,7 +855,6 @@ const PianoTilesGame: React.FC = () => {
         </div>
       </div>
 
-      {/* Conteneur du jeu */}
       <div
         style={{
           position: "relative",
@@ -783,7 +868,6 @@ const PianoTilesGame: React.FC = () => {
           overflow: "hidden",
         }}
       >
-        {/* Animation du bonus */}
         <div
           className={`absolute top-[60px] z-[20] w-[350px] ${
             animate ? "animate-bonus" : "offscreen"
@@ -792,7 +876,6 @@ const PianoTilesGame: React.FC = () => {
           {currentBonusImage && <img src={currentBonusImage} alt="Bonus" />}
         </div>
 
-        {/* Messages de feedback */}
         {feedbacks.map((fb) => (
           <div
             key={fb.id}
@@ -828,7 +911,6 @@ const PianoTilesGame: React.FC = () => {
           </div>
         ))}
 
-        {/* Ligne de séparation en bas */}
         <div
           className="border-t border-dashed border-[rgba(255,255,255,0.4)] bg-[#836EF9] bg-opacity-20"
           style={{
@@ -842,7 +924,6 @@ const PianoTilesGame: React.FC = () => {
           }}
         ></div>
 
-        {/* Affichage des tuiles */}
         {rows.map((tile, i) => (
           <img
             alt="tile"
