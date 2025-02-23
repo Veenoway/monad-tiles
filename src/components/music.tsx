@@ -672,11 +672,15 @@ const PianoTilesGame: React.FC = () => {
                         >
                           {index + 1}
                         </td>
-                        <td className="px-4 py-1.5">
+                        <td className="px-4 py-1.5 text-white">
                           {userAddress ? addressSlicer(userAddress) : "Anon"}
                         </td>
-                        <td className="px-4 py-1.5  font-bold">{score}</td>
-                        <td className="px-4 py-1.5 text-end">{tx}</td>
+                        <td className="px-4 py-1.5  font-bold  text-white">
+                          {score}
+                        </td>
+                        <td className="px-4 py-1.5 text-end  text-white">
+                          {tx}
+                        </td>
                       </tr>
                     )
                   )
@@ -699,13 +703,13 @@ const PianoTilesGame: React.FC = () => {
               <span className={`px-4 py-1.5 font-bold text-white/70`}>
                 {userRank || ""}
               </span>
-              <span className="px-4 py-1.5">
+              <span className="px-4 py-1.5 text-white">
                 {address ? addressSlicer(address) : "Anon"}
               </span>
-              <span className="px-4 py-1.5 font-bold">
+              <span className="px-4 py-1.5 font-bold  text-white">
                 {(currentGlobalCount as [number])?.[0]}
               </span>
-              <span className="px-4 py-1.5 text-end">
+              <span className="px-4 py-1.5 text-end  text-white">
                 {(currentGlobalCount as [number, number, number])?.[2]}
               </span>
             </div>
