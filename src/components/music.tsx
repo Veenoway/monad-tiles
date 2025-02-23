@@ -112,7 +112,7 @@ const PianoTilesGame: React.FC = () => {
   const baselineSpawnIntervalRef = useRef<number>(600);
 
   // On souhaite un écart fixe de 20px entre les tuiles.
-  const gap = 20;
+  const gap = 60;
 
   const [rows, setRows] = useState<Tile[]>([]);
   const [score, setScore] = useState<number>(0);
