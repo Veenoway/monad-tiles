@@ -6,7 +6,6 @@ import { NextResponse } from "next/server";
 import { Chain, createWalletClient, getContract, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-// Configuration pour plusieurs relayers
 const RELAYER_PRIVATE_KEYS = (process.env.RELAYER_PKS || "")
   .split(",")
   .map((pk) => (pk.startsWith("0x") ? pk : `0x${pk}`) as `0x${string}`);
@@ -44,13 +43,11 @@ interface QueueItem {
   reject: (error: { message: string }) => void;
 }
 
-// Ajouter un type pour les erreurs de transaction
 type TransactionError = {
   message: string;
   code?: string | number;
 };
 
-// Ajouter une fonction pour vérifier si l'erreur est liée aux frais
 function isInsufficientFundsError(error: TransactionError): boolean {
   return (
     error.message.includes("insufficient funds") ||
@@ -83,6 +80,8 @@ async function processTransaction(
 
   if (relayer.currentNonce === null) {
     const nonceHex = await walletClient.request({
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
       method: "eth_getTransactionCount",
       params: [account.address, "pending"],
     });
@@ -111,10 +110,8 @@ async function processTransaction(
     const txError = error as TransactionError;
 
     if (isInsufficientFundsError(txError)) {
-      // Marquer ce relayer comme essayé
       retriedRelayers.add(relayerPk);
 
-      // Trouver le prochain relayer disponible
       const availableRelayer = Array.from(relayers.keys()).find(
         (pk) => !retriedRelayers.has(pk)
       );
@@ -124,7 +121,7 @@ async function processTransaction(
           `Relayer ${relayerPk} out of funds, switching to ${availableRelayer}`
         );
         return processTransaction(
-          availableRelayer,
+          availableRelayer as `0x${string}`,
           playerAddress,
           action,
           score,
@@ -137,6 +134,8 @@ async function processTransaction(
 
     if (txError.message?.includes("Nonce too low")) {
       const nonceHex = await walletClient.request({
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
         method: "eth_getTransactionCount",
         params: [account.address, "pending"],
       });
@@ -185,7 +184,7 @@ async function processRelayerQueue(relayerPk: `0x${string}`) {
 
 export async function POST(req: Request) {
   try {
-    const { playerAddress, action, score } = await req.json();
+    const { playerAddress, action, score, relayerIndex = 0 } = await req.json();
     if (!playerAddress || !action) {
       return NextResponse.json(
         {
@@ -195,12 +194,24 @@ export async function POST(req: Request) {
       );
     }
 
-    // Sélectionner le relayer avec la file d'attente la plus courte
-    const selectedRelayer = Array.from(relayers.entries()).reduce(
-      (min, [pk, state]) => {
-        return state.queue.length < min[1].queue.length ? [pk, state] : min;
-      }
-    )[0];
+    // Sélectionner le relayer avec la file d'attente la plus courte si relayerIndex n'est pas spécifié
+    let selectedRelayer: `0x${string}`;
+
+    if (relayerIndex !== undefined) {
+      // Utiliser l'index spécifié
+      selectedRelayer =
+        RELAYER_PRIVATE_KEYS[relayerIndex % RELAYER_PRIVATE_KEYS.length];
+    } else {
+      // Trouver le relayer avec la file d'attente la plus courte
+      selectedRelayer = Array.from(relayers.entries()).reduce(
+        (min, [pk, state]) => {
+          return state.queue.length < min[1].queue.length
+            ? [pk as `0x${string}`, state]
+            : min;
+        },
+        [RELAYER_PRIVATE_KEYS[0], relayers.get(RELAYER_PRIVATE_KEYS[0])!]
+      )[0] as `0x${string}`;
+    }
 
     const txPromise = new Promise<string>((resolve, reject) => {
       relayers.get(selectedRelayer)!.queue.push({
@@ -212,12 +223,14 @@ export async function POST(req: Request) {
       });
     });
 
+    // Démarrer le traitement de la file d'attente pour ce relayer
     processRelayerQueue(selectedRelayer);
     const txHash = await txPromise;
 
     return NextResponse.json({
       success: true,
       txHash,
+      relayerUsed: selectedRelayer.slice(0, 6) + "...", // Pour le débogage
     });
   } catch (error) {
     console.error("Relayer error:", error);

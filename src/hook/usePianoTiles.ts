@@ -2,7 +2,7 @@ import {
   PIANO_CONTRACT_ABI,
   PIANO_CONTRACT_ADDRESS,
 } from "@/constant/pianoTiles";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useAccount, useReadContract } from "wagmi";
 
 type PlayerStats = {
@@ -11,6 +11,8 @@ type PlayerStats = {
   lastScore: bigint;
   bestScore: bigint;
 };
+
+type LeaderboardEntry = [string, number, number];
 
 type UsePianoRelayReturn = {
   click: (playerAddress: string) => Promise<void>;
@@ -29,6 +31,7 @@ type UsePianoRelayReturn = {
   goToPreviousPage: () => void;
   canGoToNextPage: boolean;
   canGoToPreviousPage: boolean;
+  leaderboardFormatted: LeaderboardEntry[] | undefined;
 };
 
 export function usePianoRelay(): UsePianoRelayReturn {
@@ -54,6 +57,9 @@ export function usePianoRelay(): UsePianoRelayReturn {
       query: {
         enabled: true,
         refetchInterval: 5000,
+        staleTime: 3000,
+        gcTime: 5000,
+        placeholderData: "previousData",
       },
     }) as {
       data: [string[], bigint[], bigint[]] | undefined;
@@ -87,14 +93,16 @@ export function usePianoRelay(): UsePianoRelayReturn {
   const [txHashes, setTxHashes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const formattedPlayerStats: PlayerStats[] = leaderboardData
-    ? (leaderboardData[0] as string[]).map((address, index) => ({
-        address,
-        lastScore: (leaderboardData[1] as bigint[])[index],
-        bestScore: (leaderboardData[2] as bigint[])[index],
-        clickCount: BigInt(0),
-      }))
-    : [];
+  const formattedPlayerStats: PlayerStats[] = useMemo(() => {
+    if (!leaderboardData || !Array.isArray(leaderboardData[0])) return [];
+
+    return (leaderboardData[0] as string[]).map((address, index) => ({
+      address,
+      lastScore: (leaderboardData[1] as bigint[])[index],
+      bestScore: (leaderboardData[2] as bigint[])[index],
+      clickCount: BigInt(0),
+    }));
+  }, [leaderboardData]);
 
   const setPage = useCallback(
     (page: number) => {
@@ -141,7 +149,7 @@ export function usePianoRelay(): UsePianoRelayReturn {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             action: "submitScore",
-            score: score,
+            score: Math.floor(score),
             playerAddress: address,
           }),
         });
@@ -154,6 +162,7 @@ export function usePianoRelay(): UsePianoRelayReturn {
         await refetchLeaderboard();
         await refetchGlobalCount();
       } catch (e) {
+        console.error("Submit score error:", e);
         setError((e as { message: string }).message);
       } finally {
         setIsLoading(false);
@@ -179,6 +188,25 @@ export function usePianoRelay(): UsePianoRelayReturn {
     }
   }, [canGoToPreviousPage]);
 
+  const leaderboardFormatted = useMemo(() => {
+    if (!leaderboardData || !Array.isArray(leaderboardData[0]))
+      return undefined;
+
+    const addresses = leaderboardData[0];
+    const scores = leaderboardData[1];
+    const txns = leaderboardData[2];
+
+    const finalValues: LeaderboardEntry[] = [];
+
+    if (Array.isArray(addresses)) {
+      addresses.forEach((address: string, i: number) => {
+        finalValues.push([address, Number(scores[i]), Number(txns[i])]);
+      });
+    }
+
+    return finalValues;
+  }, [leaderboardData]);
+
   return {
     click,
     submitScore,
@@ -196,5 +224,6 @@ export function usePianoRelay(): UsePianoRelayReturn {
     goToPreviousPage,
     canGoToNextPage,
     canGoToPreviousPage,
+    leaderboardFormatted,
   };
 }

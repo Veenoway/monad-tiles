@@ -3,17 +3,12 @@ import { usePianoRelay } from "@/hook/usePianoTiles";
 import { useModalStore } from "@/store/modalStore";
 import Image from "next/image";
 import Link from "next/link";
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FaRankingStar } from "react-icons/fa6";
 import { GoMute, GoUnmute } from "react-icons/go";
 import { IoSettingsSharp } from "react-icons/io5";
 import { useAccount } from "wagmi";
+
 interface Tile {
   id: number;
   top: number;
@@ -112,13 +107,14 @@ const menuBgMusic: string = "/sound/route.mp3";
 const gameOverBgMusics: string[] = ["/sound/tapion.mp3"];
 const gameOverSound: string = "/sound/haha.mp3";
 
+type LeaderboardEntry = [string, number, number];
+
 const PianoTilesGame: React.FC = () => {
   const { setIsOpen } = useModalStore();
   const { address } = useAccount();
-  const { click, submitScore, userRank, currentGlobalCount, leaderboard } =
+  const { userRank, currentGlobalCount, leaderboardFormatted } =
     usePianoRelay();
 
-  // Pour le jeu
   const containerHeight = 600;
   const rowHeight = 150;
   const columns = 4;
@@ -129,7 +125,6 @@ const PianoTilesGame: React.FC = () => {
   const baselineTileSpeedRef = useRef<number>(computedInitialSpeed);
   const baselineSpawnIntervalRef = useRef<number>(600);
 
-  // Écart fixe entre tuiles
   const gap = 60;
 
   const [rows, setRows] = useState<Tile[]>([]);
@@ -150,6 +145,7 @@ const PianoTilesGame: React.FC = () => {
   const [showLeaderboard, setShowLeaderboard] = useState<boolean>(false);
   const [scoreMultiplier, setScoreMultiplier] = useState<number>(1);
   const [currentBonusImage, setCurrentBonusImage] = useState<string>("");
+  const [txCount, setTxCount] = useState<number>(0);
 
   const animTimerRef = useRef<NodeJS.Timeout | null>(null);
   const accelTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -180,20 +176,29 @@ const PianoTilesGame: React.FC = () => {
   }, []);
 
   const updateAllAudioVolumes = useCallback(() => {
-    const bgVolumeFinal = isMuted ? 0 : bgVolume;
-    const sfxVolumeFinal = isMuted ? 0 : sfxVolume;
+    const allAudios = [
+      bgMusicRef.current,
+      menuBgMusicRef.current,
+      gameOverBgMusicRef.current,
+      audioRef.current,
+      specialBonusAudioRef.current,
+      ...bonusAudioRefs.current,
+    ];
 
-    if (bgMusicRef.current) bgMusicRef.current.volume = bgVolumeFinal;
-    if (menuBgMusicRef.current) menuBgMusicRef.current.volume = bgVolumeFinal;
-    if (gameOverBgMusicRef.current)
-      gameOverBgMusicRef.current.volume = bgVolumeFinal;
+    allAudios.forEach((audio) => {
+      if (!audio) return;
 
-    if (audioRef.current) audioRef.current.volume = sfxVolumeFinal;
-    if (specialBonusAudioRef.current)
-      specialBonusAudioRef.current.volume = sfxVolumeFinal;
+      audio.muted = isMuted;
 
-    bonusAudioRefs.current.forEach((audio) => {
-      audio.volume = sfxVolumeFinal;
+      if (
+        audio === bgMusicRef.current ||
+        audio === menuBgMusicRef.current ||
+        audio === gameOverBgMusicRef.current
+      ) {
+        audio.volume = bgVolume;
+      } else {
+        audio.volume = sfxVolume;
+      }
     });
   }, [isMuted, bgVolume, sfxVolume]);
 
@@ -202,32 +207,25 @@ const PianoTilesGame: React.FC = () => {
   }, [isMuted, bgVolume, sfxVolume, updateAllAudioVolumes]);
 
   const toggleMute = useCallback(() => {
-    setIsMuted((prev) => !prev);
+    setIsMuted((prev) => {
+      const newMuted = !prev;
+
+      // Mettre à jour immédiatement tous les sons actifs
+      if (bgMusicRef.current) bgMusicRef.current.muted = newMuted;
+      if (menuBgMusicRef.current) menuBgMusicRef.current.muted = newMuted;
+      if (gameOverBgMusicRef.current)
+        gameOverBgMusicRef.current.muted = newMuted;
+      if (audioRef.current) audioRef.current.muted = newMuted;
+      if (specialBonusAudioRef.current)
+        specialBonusAudioRef.current.muted = newMuted;
+
+      bonusAudioRefs.current.forEach((audio) => {
+        audio.muted = newMuted;
+      });
+
+      return newMuted;
+    });
   }, []);
-
-  const playBonusSound = useCallback(
-    (index: number) => {
-      if (isMuted) return;
-      const audio = bonusAudioRefs.current[index];
-      if (audio) {
-        audio.currentTime = 0;
-        audio.volume = sfxVolume;
-        audio.play().catch((err) => console.log("Erreur bonus sound:", err));
-      }
-    },
-    [isMuted, sfxVolume]
-  );
-
-  const playSpecialBonusSound = useCallback(() => {
-    if (isMuted) return;
-    if (specialBonusAudioRef.current) {
-      specialBonusAudioRef.current.currentTime = 0;
-      specialBonusAudioRef.current.volume = sfxVolume;
-      specialBonusAudioRef.current
-        .play()
-        .catch((err) => console.log("Erreur special bonus sound:", err));
-    }
-  }, [isMuted, sfxVolume]);
 
   useEffect(() => {
     if (bgMusicRef.current) bgMusicRef.current.pause();
@@ -423,8 +421,18 @@ const PianoTilesGame: React.FC = () => {
       return;
     }
 
-    // Arrêter tous les sons avant de commencer une nouvelle partie
+    // Réinitialiser le compteur de transactions
+    setTxCount(0);
+
+    // Arrêter tous les sons avant de commencer
     stopAllSounds();
+
+    // Réinitialiser explicitement la musique de game over
+    if (gameOverBgMusicRef.current) {
+      gameOverBgMusicRef.current.pause();
+      gameOverBgMusicRef.current.currentTime = 0;
+      gameOverBgMusicRef.current = null;
+    }
 
     if (animTimerRef.current) clearInterval(animTimerRef.current);
     if (accelTimerRef.current) clearInterval(accelTimerRef.current);
@@ -444,16 +452,47 @@ const PianoTilesGame: React.FC = () => {
     setIsPlaying(true);
   };
 
-  const endGame = async () => {
-    // Capturer le score final immédiatement
+  const endGame = useCallback(() => {
+    // Capturer le score final immédiatement dans une variable locale
     const finalScore = score;
+    console.log("Game over with score:", finalScore);
+
+    // Mettre à jour l'état du jeu
     setIsPlaying(false);
     setGameOver(true);
+
+    // Nettoyer les timers
     if (animTimerRef.current) clearInterval(animTimerRef.current);
     if (accelTimerRef.current) clearInterval(accelTimerRef.current);
-    // Utiliser le score capturé
-    await submitScore(finalScore);
-  };
+    if (bonusTimerRef.current) {
+      clearTimeout(bonusTimerRef.current);
+      bonusTimerRef.current = null;
+    }
+
+    // Réinitialiser les bonus et multiplicateurs
+    setScoreMultiplier(1);
+    setCurrentBonusImage("");
+
+    setTimeout(() => {
+      console.log("Submitting final score:", finalScore);
+      // Utiliser un relayer aléatoire pour la soumission du score
+      const relayerIndex = Math.floor(Math.random() * 3);
+
+      fetch("/api/relay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          playerAddress: address,
+          action: "submitScore",
+          score: finalScore,
+          relayerIndex: relayerIndex,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => console.log("Score submitted:", data))
+        .catch((error) => console.error("Error submitting score:", error));
+    }, 500);
+  }, [score, address]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -567,7 +606,7 @@ const PianoTilesGame: React.FC = () => {
           bonusTimerRef.current = setTimeout(() => {
             setScoreMultiplier(1);
             setCurrentBonusImage("");
-            addFeedback("Multiplier Ended", "#FF4500");
+            addFeedback("Bonus ", "#FF4500");
             bonusTimerRef.current = null;
           }, 30000);
           txCount = newMultiplier === 2 ? 4 : 8;
@@ -575,7 +614,7 @@ const PianoTilesGame: React.FC = () => {
           setTileSpeed((prev) => prev * 0.9);
           setSpawnInterval((prev) => prev / 0.9);
           setCurrentBonusImage("/bonus/bonus-fin-2.png");
-          addFeedback("Speed Reduced (permanently)!", "#00FF00");
+          addFeedback("Slower!", "#00FF00");
           txCount = 4;
         }
         handleClicks();
@@ -612,12 +651,29 @@ const PianoTilesGame: React.FC = () => {
     }
   }, [clickedTile, address, scoreMultiplier, currentBonusImage]);
 
-  const triggerTX = async (txCount: number) => {
-    if (address) {
-      await Promise.all(
-        Array.from({ length: txCount }).map(() => click(address))
-      );
-    }
+  const triggerTX = (count: number) => {
+    if (!address) return;
+
+    // Incrémenter le compteur de transactions
+    setTxCount((prev) => prev + count);
+
+    // Utiliser un index aléatoire pour le premier relayer
+    const startIndex = Math.floor(Math.random() * 3);
+
+    // Distribuer les transactions entre les relayers
+    Array.from({ length: count }).forEach((_, index) => {
+      const relayerIndex = (startIndex + index) % 3;
+
+      fetch("/api/relay", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          playerAddress: address,
+          action: "click",
+          relayerIndex: relayerIndex,
+        }),
+      }).catch((error) => console.error("Error sending tx:", error));
+    });
   };
 
   const addressSlicer = (address?: string, endCut = 4) => {
@@ -625,35 +681,28 @@ const PianoTilesGame: React.FC = () => {
     return `${address.slice(0, 4)}...${address.slice(-endCut)}`;
   };
 
-  console.log("leaderboard", leaderboard);
-
-  const leaderboardFormatted = useMemo(() => {
-    if (!leaderboard) return;
-    const leaderboardBuffer: [string[], number[], number[]] = leaderboard as [
-      string[],
-      number[],
-      number[]
-    ];
-    const addresses = leaderboardBuffer?.[0];
-    const scores = leaderboardBuffer?.[1];
-    const txns = leaderboardBuffer?.[2];
-
-    const finalValues: [string, number, number][] = [];
-    addresses?.forEach((address: string, i: number) => {
-      finalValues.push([address, scores[i], txns[i]]);
-    });
-
-    return finalValues;
-  }, [leaderboard, address]);
-
-  console.log("currentGlobalCount", currentGlobalCount);
-
   const renderSettings = () => {
     return (
       <div className="absolute z-[11000] inset-0 bg-[rgba(11,4,51,0.95)] flex flex-col items-center justify-center p-4">
         <h2 className="text-3xl text-white font-bold uppercase italic mb-6">
           Settings
         </h2>
+        <div className="mb-6 flex items-center justify-center w-full">
+          <button
+            onClick={toggleMute}
+            className="flex items-center gap-2 px-4 py-2 bg-[#a1055c] rounded-xl text-white"
+          >
+            {isMuted ? (
+              <>
+                <GoMute size={24} /> <span>Unmute All Sounds</span>
+              </>
+            ) : (
+              <>
+                <GoUnmute size={24} /> <span>Mute All Sounds</span>
+              </>
+            )}
+          </button>
+        </div>
         <div className="mb-4 flex flex-col w-full">
           <label className="text-white text-2xl mb-4 text-start ml-[5%]">
             Gameplay BG Music:
@@ -676,6 +725,11 @@ const PianoTilesGame: React.FC = () => {
             ))}
           </div>
         </div>
+        {isMuted && (
+          <div className="text-yellow-300 text-center mb-4">
+            Note: Volume settings will take effect when sounds are unmuted
+          </div>
+        )}
         <div className="mb-2 flex flex-col w-full mt-6">
           <label className="text-white text-2xl mb-2 text-start ml-[5%]">
             BG Music Volume:
@@ -738,11 +792,14 @@ const PianoTilesGame: React.FC = () => {
               <tbody>
                 {leaderboardFormatted && leaderboardFormatted.length > 0 ? (
                   leaderboardFormatted.map(
-                    ([userAddress, score, tx], index: number) => (
+                    (
+                      [userAddress, score, tx]: LeaderboardEntry,
+                      index: number
+                    ) => (
                       <tr
                         key={index}
                         className={`border-b border-white/10 text-lg ${
-                          userAddress === address ? "bg-[#a1055b76]" : ""
+                          address === userAddress ? "bg-[#a1055b76]" : ""
                         }`}
                       >
                         <td
@@ -778,7 +835,7 @@ const PianoTilesGame: React.FC = () => {
           </div>
         </div>
         {leaderboardFormatted?.find(
-          ([userAddress]) => address === userAddress
+          ([userAddress]: [string, ...unknown[]]) => address === userAddress
         )?.[0] ? null : (
           <div className="w-full mt-3 px-4 bg-[#a1055b76] border-t border-white/10 rounded-md">
             <div className="flex justify-between  text-lg">
@@ -813,6 +870,54 @@ const PianoTilesGame: React.FC = () => {
     setTimeout(() => {
       setAnimate(true);
     }, 50);
+  };
+
+  const renderGameOver = () => {
+    return (
+      <div className="absolute z-50 inset-0 flex flex-col items-center pt-[60px] bg-[rgba(11,4,51,0.9)]">
+        <Image
+          src="/game/lost.png"
+          alt="lose message"
+          width={300}
+          height={120}
+          unoptimized
+        />
+        <div className="flex justify-center gap-10 items-center mt-[80px] mb-[50px]">
+          <div className="flex flex-col items-center">
+            <p className="text-xl text-white mb-0 leading-[18px] uppercase">
+              Your score
+            </p>
+            <p className="text-6xl text-cyan-300 mt-2 font-bold">{score}</p>
+          </div>
+          <div className="flex flex-col items-center">
+            <p className="text-xl text-white mb-0 leading-[18px] uppercase">
+              Txns
+            </p>
+            <p className="text-6xl text-yellow-300 mt-2 font-bold">{txCount}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-5 mt-[60px]">
+          <button
+            onClick={() => setShowSettings(true)}
+            className="px-3 py-1.5 bg-[#a1055c] text-3xl h-[50px] uppercase text-white rounded-md"
+          >
+            <IoSettingsSharp />
+          </button>
+          <button
+            onClick={startGame}
+            className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out"
+          >
+            REPLAY
+          </button>
+          <button
+            onClick={() => setShowLeaderboard(true)}
+            className="px-3 py-1.5 bg-[#a1055c] text-4xl h-[50px] uppercase text-white rounded-md"
+          >
+            <FaRankingStar />
+          </button>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -901,43 +1006,7 @@ const PianoTilesGame: React.FC = () => {
           </div>
         </div>
       )}
-      {gameOver && (
-        <div className="absolute z-50 inset-0 flex flex-col items-center pt-[60px] bg-[rgba(11,4,51,0.9)]">
-          <Image
-            src="/game/lost.png"
-            alt="lose message"
-            width={300}
-            height={120}
-            unoptimized
-          />
-          <div className="flex flex-col justify-center items-center mt-[60px]">
-            <p className="text-xl text-white mb-0 leading-[18px] uppercase">
-              Your score
-            </p>
-            <p className="text-6xl text-cyan-300 mt-2 font-bold">{score}</p>
-          </div>
-          <div className="flex items-center gap-5 mt-[100px]">
-            <button
-              onClick={() => setShowSettings(true)}
-              className="px-3 py-1.5 bg-[#a1055c] text-3xl h-[50px] uppercase text-white rounded-md"
-            >
-              <IoSettingsSharp />
-            </button>
-            <button
-              onClick={startGame}
-              className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out"
-            >
-              REPLAY
-            </button>
-            <button
-              onClick={() => setShowLeaderboard(true)}
-              className="px-3 py-1.5 bg-[#a1055c] text-4xl h-[50px] uppercase text-white rounded-md"
-            >
-              <FaRankingStar />
-            </button>
-          </div>
-        </div>
-      )}
+      {gameOver && renderGameOver()}
       <div className="w-full justify-between flex items-center bg-[#190e59] py-5 px-5 relative">
         <div className="flex flex-col items-center">
           <p className="text-lg text-cyan-300 mb-0 leading-[18px]">

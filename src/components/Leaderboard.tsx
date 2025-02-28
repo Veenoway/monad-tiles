@@ -63,11 +63,11 @@ const Leaderboard: React.FC = () => {
             disabled={!canGoToPreviousPage}
             className="px-4 py-2 bg-blue-500 rounded disabled:bg-gray-600 disabled:cursor-not-allowed"
           >
-            Page précédente
+            {"<"}
           </button>
 
           <span className="text-lg">
-            Page {currentPage + 1} sur {totalPages}
+            Page {currentPage + 1}/{totalPages}
           </span>
 
           <button
@@ -75,7 +75,7 @@ const Leaderboard: React.FC = () => {
             disabled={!canGoToNextPage}
             className="px-4 py-2 bg-blue-500 rounded disabled:bg-gray-600 disabled:cursor-not-allowed"
           >
-            Page suivante
+            {">"}
           </button>
         </div>
       )}
