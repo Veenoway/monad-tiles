@@ -1,208 +1,181 @@
 export const PIANO_CONTRACT_ADDRESS =
-  "0xB8DbEe86A653A6100B1f62Bd61493DF730f74419";
+  "0x0283b88Be34E6E57a305596C5B09Cc25f8313895";
 
 export const PIANO_CONTRACT_ABI = [
   {
-    anonymous: false,
+    type: "event",
+    name: "Click",
     inputs: [
       {
-        indexed: true,
-        internalType: "address",
         name: "player",
         type: "address",
+        indexed: true,
       },
       {
-        indexed: false,
-        internalType: "uint256",
         name: "newTxCount",
         type: "uint256",
+        indexed: false,
       },
     ],
-    name: "Click",
-    type: "event",
-  },
-  {
     anonymous: false,
-    inputs: [
-      {
-        indexed: true,
-        internalType: "address",
-        name: "player",
-        type: "address",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "lastScore",
-        type: "uint256",
-      },
-      {
-        indexed: false,
-        internalType: "uint256",
-        name: "bestScore",
-        type: "uint256",
-      },
-    ],
-    name: "ScoreSubmitted",
+  },
+  {
     type: "event",
-  },
-  {
+    name: "NewLeaderboardEntry",
     inputs: [
       {
-        internalType: "address",
-        name: "_userAddress",
-        type: "address",
-      },
-    ],
-    name: "click",
-    outputs: [],
-    stateMutability: "nonpayable",
-    type: "function",
-  },
-  {
-    inputs: [],
-    name: "getLeaderboard",
-    outputs: [
-      {
-        internalType: "address[]",
-        name: "topPlayers",
-        type: "address[]",
-      },
-      {
-        internalType: "uint256[]",
-        name: "bestScores",
-        type: "uint256[]",
-      },
-      {
-        internalType: "uint256[]",
-        name: "txCounts",
-        type: "uint256[]",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
         name: "player",
         type: "address",
-      },
-    ],
-    name: "getRank",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "rank",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    name: "leaderboard",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    name: "players",
-    outputs: [
-      {
-        internalType: "uint256",
-        name: "bestScore",
-        type: "uint256",
+        indexed: true,
       },
       {
-        internalType: "uint256",
-        name: "lastScore",
-        type: "uint256",
-      },
-      {
-        internalType: "uint256",
-        name: "txCount",
-        type: "uint256",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
-        name: "",
-        type: "uint256",
-      },
-    ],
-    name: "playersList",
-    outputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "address",
-        name: "",
-        type: "address",
-      },
-    ],
-    name: "registered",
-    outputs: [
-      {
-        internalType: "bool",
-        name: "",
-        type: "bool",
-      },
-    ],
-    stateMutability: "view",
-    type: "function",
-  },
-  {
-    inputs: [
-      {
-        internalType: "uint256",
         name: "score",
         type: "uint256",
+        indexed: false,
       },
       {
-        internalType: "address",
-        name: "_userAddress",
-        type: "address",
+        name: "rank",
+        type: "uint256",
+        indexed: false,
       },
     ],
-    name: "submitScore",
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "ScoreSubmitted",
+    inputs: [
+      {
+        name: "player",
+        type: "address",
+        indexed: true,
+      },
+      {
+        name: "lastScore",
+        type: "uint256",
+        indexed: false,
+      },
+      {
+        name: "bestScore",
+        type: "uint256",
+        indexed: false,
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "function",
+    name: "AUTHORIZED_ADDRESS",
+    inputs: [],
+    outputs: [{ type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "MAX_LEADERBOARD_SIZE",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "click",
+    inputs: [{ type: "address" }],
     outputs: [],
     stateMutability: "nonpayable",
+  },
+  {
     type: "function",
+    name: "getAllPlayersStats",
+    inputs: [],
+    outputs: [
+      { type: "address[]" },
+      { type: "uint256[]" },
+      { type: "uint256[]" },
+      { type: "uint256[]" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getLeaderboard",
+    inputs: [],
+    outputs: [
+      { type: "address[]" },
+      { type: "uint256[]" },
+      { type: "uint256[]" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getPlayerStats",
+    inputs: [{ type: "address" }],
+    outputs: [
+      { type: "uint256" },
+      { type: "uint256" },
+      { type: "uint256" },
+      { type: "uint256" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getPlayersStatsPaginated",
+    inputs: [{ type: "uint256" }, { type: "uint256" }],
+    outputs: [
+      { type: "address[]" },
+      { type: "uint256[]" },
+      { type: "uint256[]" },
+      { type: "uint256[]" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getRank",
+    inputs: [{ type: "address" }],
+    outputs: [{ type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getTotalPlayers",
+    inputs: [],
+    outputs: [{ type: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "leaderboard",
+    inputs: [{ type: "uint256" }],
+    outputs: [{ type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "players",
+    inputs: [{ type: "address" }],
+    outputs: [
+      { type: "uint256" },
+      { type: "uint256" },
+      { type: "uint256" },
+      { type: "bool" },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "playersList",
+    inputs: [{ type: "uint256" }],
+    outputs: [{ type: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "submitScore",
+    inputs: [{ type: "uint256" }, { type: "address" }],
+    outputs: [],
+    stateMutability: "nonpayable",
   },
 ];

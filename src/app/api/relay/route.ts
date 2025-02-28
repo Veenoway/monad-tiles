@@ -6,18 +6,35 @@ import { NextResponse } from "next/server";
 import { Chain, createWalletClient, getContract, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
-const RELAYER_PRIVATE_KEY = process.env.RELAYER_PK as `0x${string}`;
+// Configuration pour plusieurs relayers
+const RELAYER_PRIVATE_KEYS = (process.env.RELAYER_PKS || "")
+  .split(",")
+  .map((pk) => (pk.startsWith("0x") ? pk : `0x${pk}`) as `0x${string}`);
+
+if (RELAYER_PRIVATE_KEYS.length === 0) {
+  throw new Error("No relayer private keys configured");
+}
+
 const RPC_URL =
   "https://testnet-rpc2.monad.xyz/52227f026fa8fac9e2014c58fbf5643369b3bfc6";
 const CHAIN_ID = 10143;
 
-if (!RELAYER_PRIVATE_KEY || !RPC_URL || !CONTRACT_ADDRESS) {
-  throw new Error("Relayer configuration missing in environment variables");
-}
-
 const transport = http(RPC_URL);
 
-let currentNonce: number | null = null;
+type RelayerState = {
+  currentNonce: number | null;
+  processing: boolean;
+  queue: QueueItem[];
+};
+
+const relayers = new Map<string, RelayerState>();
+RELAYER_PRIVATE_KEYS.forEach((pk) => {
+  relayers.set(pk, {
+    currentNonce: null,
+    processing: false,
+    queue: [],
+  });
+});
 
 interface QueueItem {
   playerAddress: string;
@@ -27,19 +44,30 @@ interface QueueItem {
   reject: (error: { message: string }) => void;
 }
 
-const transactionQueue: QueueItem[] = [];
-let processing = false;
+// Ajouter un type pour les erreurs de transaction
+type TransactionError = {
+  message: string;
+  code?: string | number;
+};
+
+// Ajouter une fonction pour vérifier si l'erreur est liée aux frais
+function isInsufficientFundsError(error: TransactionError): boolean {
+  return (
+    error.message.includes("insufficient funds") ||
+    error.message.includes("insufficient balance") ||
+    error.code === -32000
+  );
+}
 
 async function processTransaction(
+  relayerPk: `0x${string}`,
   playerAddress: string,
   action: string,
-  score?: number
+  score?: number,
+  retriedRelayers: Set<string> = new Set()
 ): Promise<string> {
-  const account = privateKeyToAccount(
-    RELAYER_PRIVATE_KEY.startsWith("0x")
-      ? RELAYER_PRIVATE_KEY
-      : `0x${RELAYER_PRIVATE_KEY}`
-  );
+  const relayer = relayers.get(relayerPk)!;
+  const account = privateKeyToAccount(relayerPk);
 
   const walletClient = createWalletClient({
     account,
@@ -53,85 +81,106 @@ async function processTransaction(
     client: walletClient,
   });
 
-  if (currentNonce === null) {
+  if (relayer.currentNonce === null) {
     const nonceHex = await walletClient.request({
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
       method: "eth_getTransactionCount",
       params: [account.address, "pending"],
     });
-    currentNonce = parseInt(String(nonceHex), 16);
+    relayer.currentNonce = parseInt(String(nonceHex), 16);
   }
-  const txOptions = { nonce: currentNonce };
-  currentNonce++;
 
-  let txHash: string;
+  const txOptions = { nonce: relayer.currentNonce };
+  relayer.currentNonce++;
+
   try {
     if (action === "click") {
-      txHash = await contract.write.click([playerAddress], txOptions);
+      return await contract.write.click([playerAddress], txOptions);
     } else if (action === "submitScore") {
       if (typeof score !== "number") {
         throw new Error(
           "Invalid or missing 'score' parameter for submitScore action."
         );
       }
-      txHash = await contract.write.submitScore(
+      return await contract.write.submitScore(
         [score, playerAddress],
         txOptions
       );
-    } else {
-      throw new Error(
-        "Invalid action. Supported actions: 'click', 'submitScore'."
-      );
     }
+    throw new Error("Invalid action");
   } catch (error) {
-    if (
-      (error as { message: string }).message &&
-      (error as { message: string }).message.includes("Nonce too low")
-    ) {
+    const txError = error as TransactionError;
+
+    if (isInsufficientFundsError(txError)) {
+      // Marquer ce relayer comme essayé
+      retriedRelayers.add(relayerPk);
+
+      // Trouver le prochain relayer disponible
+      const availableRelayer = Array.from(relayers.keys()).find(
+        (pk) => !retriedRelayers.has(pk)
+      );
+
+      if (availableRelayer) {
+        console.log(
+          `Relayer ${relayerPk} out of funds, switching to ${availableRelayer}`
+        );
+        return processTransaction(
+          availableRelayer,
+          playerAddress,
+          action,
+          score,
+          retriedRelayers
+        );
+      }
+
+      throw new Error("All relayers are out of funds");
+    }
+
+    if (txError.message?.includes("Nonce too low")) {
       const nonceHex = await walletClient.request({
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
         method: "eth_getTransactionCount",
         params: [account.address, "pending"],
       });
-      currentNonce = parseInt(String(nonceHex), 16);
-      const newTxOptions = { nonce: currentNonce };
-      currentNonce++;
+      relayer.currentNonce = parseInt(String(nonceHex), 16);
+      const newTxOptions = { nonce: relayer.currentNonce };
+      relayer.currentNonce++;
+
       if (action === "click") {
-        txHash = await contract.write.click([playerAddress], newTxOptions);
+        return await contract.write.click([playerAddress], newTxOptions);
       } else if (action === "submitScore") {
-        txHash = await contract.write.submitScore(
+        return await contract.write.submitScore(
           [score, playerAddress],
           newTxOptions
         );
-      } else {
-        throw new Error("Invalid action on retry.");
       }
-    } else {
-      throw error;
     }
+    throw error;
   }
-  return txHash;
 }
 
-async function processQueue() {
-  if (processing) return;
-  processing = true;
-  while (transactionQueue.length > 0) {
-    const item = transactionQueue.shift()!;
+async function processRelayerQueue(relayerPk: `0x${string}`) {
+  const relayer = relayers.get(relayerPk)!;
+  if (relayer.processing) return;
+
+  relayer.processing = true;
+  while (relayer.queue.length > 0) {
+    const item = relayer.queue.shift()!;
     try {
       const txHash = await processTransaction(
+        relayerPk,
         item.playerAddress,
         item.action,
-        item.score
+        item.score,
+        new Set() // Commencer avec un ensemble vide de relayers essayés
       );
       item.resolve(txHash);
     } catch (error) {
-      item.reject(error as unknown as never);
+      if ((error as Error).message === "All relayers are out of funds") {
+        console.error("Critical: All relayers are out of funds");
+      }
+      item.reject(error as { message: string });
     }
   }
-  processing = false;
+  relayer.processing = false;
 }
 
 export async function POST(req: Request) {
@@ -145,11 +194,27 @@ export async function POST(req: Request) {
         { status: 400 }
       );
     }
+
+    // Sélectionner le relayer avec la file d'attente la plus courte
+    const selectedRelayer = Array.from(relayers.entries()).reduce(
+      (min, [pk, state]) => {
+        return state.queue.length < min[1].queue.length ? [pk, state] : min;
+      }
+    )[0];
+
     const txPromise = new Promise<string>((resolve, reject) => {
-      transactionQueue.push({ playerAddress, action, score, resolve, reject });
+      relayers.get(selectedRelayer)!.queue.push({
+        playerAddress,
+        action,
+        score,
+        resolve,
+        reject,
+      });
     });
-    processQueue();
+
+    processRelayerQueue(selectedRelayer);
     const txHash = await txPromise;
+
     return NextResponse.json({
       success: true,
       txHash,

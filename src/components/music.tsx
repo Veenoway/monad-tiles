@@ -3,7 +3,13 @@ import { usePianoRelay } from "@/hook/usePianoTiles";
 import { useModalStore } from "@/store/modalStore";
 import Image from "next/image";
 import Link from "next/link";
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { FaRankingStar } from "react-icons/fa6";
 import { GoMute, GoUnmute } from "react-icons/go";
 import { IoSettingsSharp } from "react-icons/io5";
@@ -33,9 +39,12 @@ const bonusBgs: string[] = [
   "/bg/bill.jpg",
   "/bg/port.gif",
   "/bg/eunice.jpg",
+  "/bg/papayou.gif",
+  // "/bg/novee.gif",
   "/bg/tunez.jpg",
   "/bg/mike.jpg",
   "/bg/keone.gif",
+  // "/bg/linad.gif",
   "/bg/sailornini.jpg",
   "/bg/thisisfin.jpg",
   "/bg/john.jpg",
@@ -52,9 +61,12 @@ const bonusImages: string[] = [
   "/bonus/pfp-bill.png",
   "/bonus/pfp-port.png",
   "/bonus/pfp-eunice.png",
+  "/bonus/pfp-papayou.png",
+  // "/bonus/pfp-novee.png",
   "/bonus/pfp-tunez.png",
   "/bonus/pfp-mike.png",
   "/bonus/pfp-keone.png",
+  // "/bonus/pfp-linad.png",
   "/bonus/pfp-thisisfin.png",
   "/bonus/pfp-thisisfin.png",
   "/bonus/pfp-john.png",
@@ -71,9 +83,12 @@ const bonusSongs: string[] = [
   "/sound/Bill.mp3",
   "/sound/poort.ogg",
   "/sound/Eunice.mp3",
+  "/sound/Eunice.mp3",
+  // "/sound/Eunice.mp3",
   "/sound/tunez4.mp3",
   "/sound/mike.mp3",
   "/sound/keone.mp3",
+  // "/sound/linad.mp3",
   "/sound/sailornini.mp3",
   "/sound/thisisfin.mp3",
   "/sound/john.mp3",
@@ -164,20 +179,55 @@ const PianoTilesGame: React.FC = () => {
     specialBonusAudioRef.current = new Audio(specialBonusSoundPath);
   }, []);
 
-  useEffect(() => {
-    if (bgMusicRef.current) bgMusicRef.current.volume = isMuted ? 0 : bgVolume;
-    if (menuBgMusicRef.current)
-      menuBgMusicRef.current.volume = isMuted ? 0 : bgVolume;
+  const updateAllAudioVolumes = useCallback(() => {
+    const bgVolumeFinal = isMuted ? 0 : bgVolume;
+    const sfxVolumeFinal = isMuted ? 0 : sfxVolume;
+
+    if (bgMusicRef.current) bgMusicRef.current.volume = bgVolumeFinal;
+    if (menuBgMusicRef.current) menuBgMusicRef.current.volume = bgVolumeFinal;
     if (gameOverBgMusicRef.current)
-      gameOverBgMusicRef.current.volume = isMuted ? 0 : bgVolume;
-    if (audioRef.current) audioRef.current.volume = isMuted ? 0 : sfxVolume;
+      gameOverBgMusicRef.current.volume = bgVolumeFinal;
+
+    if (audioRef.current) audioRef.current.volume = sfxVolumeFinal;
+    if (specialBonusAudioRef.current)
+      specialBonusAudioRef.current.volume = sfxVolumeFinal;
+
     bonusAudioRefs.current.forEach((audio) => {
-      audio.volume = isMuted ? 0 : 1;
+      audio.volume = sfxVolumeFinal;
     });
-    if (specialBonusAudioRef.current) {
-      specialBonusAudioRef.current.volume = isMuted ? 0 : 1;
-    }
   }, [isMuted, bgVolume, sfxVolume]);
+
+  useEffect(() => {
+    updateAllAudioVolumes();
+  }, [isMuted, bgVolume, sfxVolume, updateAllAudioVolumes]);
+
+  const toggleMute = useCallback(() => {
+    setIsMuted((prev) => !prev);
+  }, []);
+
+  const playBonusSound = useCallback(
+    (index: number) => {
+      if (isMuted) return;
+      const audio = bonusAudioRefs.current[index];
+      if (audio) {
+        audio.currentTime = 0;
+        audio.volume = sfxVolume;
+        audio.play().catch((err) => console.log("Erreur bonus sound:", err));
+      }
+    },
+    [isMuted, sfxVolume]
+  );
+
+  const playSpecialBonusSound = useCallback(() => {
+    if (isMuted) return;
+    if (specialBonusAudioRef.current) {
+      specialBonusAudioRef.current.currentTime = 0;
+      specialBonusAudioRef.current.volume = sfxVolume;
+      specialBonusAudioRef.current
+        .play()
+        .catch((err) => console.log("Erreur special bonus sound:", err));
+    }
+  }, [isMuted, sfxVolume]);
 
   useEffect(() => {
     if (bgMusicRef.current) bgMusicRef.current.pause();
@@ -214,27 +264,46 @@ const PianoTilesGame: React.FC = () => {
     }
   }, [isPlaying, gameOver, isMuted, bgVolume]);
 
+  const stopAllSounds = useCallback(() => {
+    if (bgMusicRef.current) {
+      bgMusicRef.current.pause();
+      bgMusicRef.current.currentTime = 0;
+    }
+    if (menuBgMusicRef.current) {
+      menuBgMusicRef.current.pause();
+      menuBgMusicRef.current.currentTime = 0;
+    }
+    if (gameOverBgMusicRef.current) {
+      gameOverBgMusicRef.current.pause();
+      gameOverBgMusicRef.current.currentTime = 0;
+    }
+    bonusAudioRefs.current.forEach((audio) => {
+      audio.pause();
+      audio.currentTime = 0;
+    });
+    if (specialBonusAudioRef.current) {
+      specialBonusAudioRef.current.pause();
+      specialBonusAudioRef.current.currentTime = 0;
+    }
+  }, []);
+
   useEffect(() => {
     if (gameOver) {
-      if (gameOverBgMusicRef.current) gameOverBgMusicRef.current.pause();
+      stopAllSounds();
       gameOverBgMusicRef.current = new Audio(gameOverBgMusics[0]);
       gameOverBgMusicRef.current.loop = true;
       gameOverBgMusicRef.current.volume = isMuted ? 0 : bgVolume;
       gameOverBgMusicRef.current
         .play()
         .catch((err) => console.log("Erreur musique Game Over:", err));
+
       const goSound = new Audio(gameOverSound);
-      goSound.volume = isMuted ? 0 : 1;
+      goSound.volume = isMuted ? 0 : sfxVolume;
       goSound
         .play()
         .catch((err) => console.log("Erreur Game Over sound:", err));
-    } else {
-      if (gameOverBgMusicRef.current) {
-        gameOverBgMusicRef.current.pause();
-        gameOverBgMusicRef.current.currentTime = 0;
-      }
     }
-  }, [gameOver, isMuted, bgVolume]);
+  }, [gameOver, isMuted, bgVolume, sfxVolume, stopAllSounds]);
 
   useEffect(() => {
     [...bonusBgs, ...bonusImages].forEach((src) => {
@@ -271,11 +340,6 @@ const PianoTilesGame: React.FC = () => {
     }
   }, [isPlaying]);
 
-  const toggleMute = () => {
-    setIsMuted((prev) => !prev);
-  };
-
-  // Fonction de création d'une nouvelle tuile
   const spawnTile = () => {
     const currentMinTop =
       rows.length > 0 ? Math.min(...rows.map((tile) => tile.top)) : 0;
@@ -358,6 +422,10 @@ const PianoTilesGame: React.FC = () => {
       setIsOpen(true);
       return;
     }
+
+    // Arrêter tous les sons avant de commencer une nouvelle partie
+    stopAllSounds();
+
     if (animTimerRef.current) clearInterval(animTimerRef.current);
     if (accelTimerRef.current) clearInterval(accelTimerRef.current);
     setRows([]);
@@ -374,52 +442,64 @@ const PianoTilesGame: React.FC = () => {
     bonusSongIndexRef.current = 0;
     setClickedTile(null);
     setIsPlaying(true);
-    if (menuBgMusicRef.current) {
-      menuBgMusicRef.current.pause();
-      menuBgMusicRef.current.currentTime = 0;
-    }
   };
 
   const endGame = async () => {
-    await submitScore(score);
+    // Capturer le score final immédiatement
+    const finalScore = score;
     setIsPlaying(false);
     setGameOver(true);
     if (animTimerRef.current) clearInterval(animTimerRef.current);
     if (accelTimerRef.current) clearInterval(accelTimerRef.current);
+    // Utiliser le score capturé
+    await submitScore(finalScore);
   };
 
   useEffect(() => {
     if (!isPlaying) return;
     animTimerRef.current = setInterval(() => {
       setRows((prevRows) => {
-        let missIncrement = 0;
+        let missedCount = 0;
         const updatedRows = prevRows
           .map((row) => ({ ...row, top: row.top + tileSpeed }))
           .filter((row) => {
             if (row.top >= containerHeight) {
-              missIncrement++;
+              missedCount++;
               return false;
             }
             return true;
           });
-        if (missIncrement > 0) {
-          for (let i = 0; i < missIncrement; i++) {
+
+        if (missedCount > 0) {
+          for (let i = 0; i < missedCount; i++) {
             addFeedback("-1", "#FF0000");
-            setLives((prevLives) => {
-              const newLives = prevLives - 1;
-              if (newLives <= 0) {
-                endGame();
-                return 0;
-              }
-              return newLives;
-            });
           }
+
+          const remainingLives = lives - missedCount;
+          if (remainingLives <= 0) {
+            setLives(0);
+            setGameOver(true);
+            setIsPlaying(false);
+            if (animTimerRef.current) {
+              clearInterval(animTimerRef.current);
+            }
+            endGame();
+            return updatedRows;
+          }
+
+          setLives(remainingLives);
         }
+
         return updatedRows;
       });
     }, updateInterval);
-    return () => clearInterval(animTimerRef.current as NodeJS.Timeout);
-  }, [isPlaying, tileSpeed, containerHeight]);
+
+    return () => {
+      if (animTimerRef.current) {
+        clearInterval(animTimerRef.current);
+      }
+    };
+  }, [isPlaying, tileSpeed, containerHeight, lives]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -544,6 +624,8 @@ const PianoTilesGame: React.FC = () => {
     if (!address) return "...";
     return `${address.slice(0, 4)}...${address.slice(-endCut)}`;
   };
+
+  console.log("leaderboard", leaderboard);
 
   const leaderboardFormatted = useMemo(() => {
     if (!leaderboard) return;
