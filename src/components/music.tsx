@@ -172,6 +172,8 @@ const PianoTilesGame: React.FC = () => {
 
   const [clickedTile, setClickedTile] = useState<Tile | null>(null);
 
+  const [isSubmittingScore, setIsSubmittingScore] = useState<boolean>(false);
+
   useEffect(() => {
     audioRef.current = new Audio("/bloop-1.mp3");
     bonusAudioRefs.current = bonusSongs.map((song) => new Audio(song));
@@ -456,11 +458,9 @@ const PianoTilesGame: React.FC = () => {
   };
 
   const endGame = useCallback(() => {
-    // Capturer le score final immédiatement dans une variable locale
     const finalScore = score;
     console.log("Game over with score:", finalScore);
 
-    // Mettre à jour l'état du jeu
     setIsPlaying(false);
     setGameOver(true);
 
@@ -472,45 +472,58 @@ const PianoTilesGame: React.FC = () => {
       bonusTimerRef.current = null;
     }
 
-    // Réinitialiser les bonus et multiplicateurs
     setScoreMultiplier(1);
     setCurrentBonusImage("");
 
-    setTimeout(() => {
-      console.log("Submitting final score:", finalScore);
-      // Utiliser un relayer aléatoire pour la soumission du score
-      const relayerIndex = Math.floor(Math.random() * 3);
+    // Indiquer que la soumission du score commence
+    setIsSubmittingScore(true);
 
-      fetch("/api/relay", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          playerAddress: address,
-          action: "submitScore",
-          score: finalScore,
-          relayerIndex: relayerIndex,
-        }),
+    // Soumettre le score immédiatement sans délai
+    const relayerIndex = Math.floor(Math.random() * 3);
+
+    fetch("/api/relay", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache", // Éviter la mise en cache
+      },
+      body: JSON.stringify({
+        playerAddress: address,
+        action: "submitScore",
+        score: finalScore,
+        relayerIndex: relayerIndex,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Score submitted:", data);
+        setIsSubmittingScore(false);
       })
-        .then((response) => response.json())
-        .then((data) => console.log("Score submitted:", data))
-        .catch((error) => console.error("Error submitting score:", error));
-    }, 500);
+      .catch((error) => {
+        console.error("Error submitting score:", error);
+        setIsSubmittingScore(false);
+      });
   }, [score, address]);
 
   useEffect(() => {
     if (!isPlaying) return;
+
+    let gameEnded = false; // Variable pour éviter les doubles appels
+
     animTimerRef.current = setInterval(() => {
       setRows((prevRows) => {
         let missedCount = 0;
         const updatedRows = prevRows
-          .map((row) => ({ ...row, top: row.top + tileSpeed }))
-          .filter((row) => {
-            if (row.top >= containerHeight) {
-              missedCount++;
-              return false;
+          .map((row) => {
+            // Marquer les tuiles comme traitées pour éviter les doubles pénalités
+            if (row.top >= containerHeight && !row.processed) {
+              row.processed = true;
+              // Ne pas pénaliser pour les tuiles bonus ou spéciales
+              if (!row.isBonus && !row.specialBonus) missedCount++;
             }
-            return true;
-          });
+            return { ...row, top: row.top + tileSpeed };
+          })
+          .filter((row) => row.top < containerHeight + rowHeight);
 
         if (missedCount > 0) {
           for (let i = 0; i < missedCount; i++) {
@@ -518,14 +531,20 @@ const PianoTilesGame: React.FC = () => {
           }
 
           const remainingLives = lives - missedCount;
-          if (remainingLives <= 0) {
+          if (remainingLives <= 0 && !gameEnded) {
+            gameEnded = true;
             setLives(0);
-            setGameOver(true);
-            setIsPlaying(false);
-            if (animTimerRef.current) {
-              clearInterval(animTimerRef.current);
-            }
-            endGame();
+
+            // Utiliser setTimeout pour éviter les problèmes de synchronisation
+            setTimeout(() => {
+              setGameOver(true);
+              setIsPlaying(false);
+              if (animTimerRef.current) {
+                clearInterval(animTimerRef.current);
+              }
+              endGame();
+            }, 100);
+
             return updatedRows;
           }
 
@@ -541,7 +560,7 @@ const PianoTilesGame: React.FC = () => {
         clearInterval(animTimerRef.current);
       }
     };
-  }, [isPlaying, tileSpeed, containerHeight, lives]);
+  }, [isPlaying, tileSpeed, containerHeight, lives, endGame]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -581,6 +600,36 @@ const PianoTilesGame: React.FC = () => {
       return prevRows;
     });
   };
+
+  const sendTransaction = useCallback(
+    async (count: number = 1) => {
+      if (!address) return;
+
+      setTxCount((prev) => prev + count);
+
+      // Distribuer les transactions entre tous les relayers
+      Array.from({ length: count }).forEach((_, index) => {
+        // Utiliser un index différent pour chaque transaction
+        const relayerIndex = index % 6; // Utiliser les 6 relayers en rotation
+
+        fetch("/api/relay", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache",
+          },
+          body: JSON.stringify({
+            playerAddress: address,
+            action: "click",
+            relayerIndex,
+          }),
+        }).catch((error) => {
+          console.error("Error sending transaction:", error);
+        });
+      });
+    },
+    [address]
+  );
 
   useEffect(() => {
     if (clickedTile) {
@@ -640,7 +689,7 @@ const PianoTilesGame: React.FC = () => {
         txCount = 2;
       }
       txCount *= scoreMultiplier;
-      triggerTX(txCount);
+      sendTransaction(txCount);
       const baseScore = clickedTile.isBonus ? 4 : 1;
       const finalScore = baseScore * scoreMultiplier;
       if (clickedTile.isBonus) {
@@ -652,32 +701,13 @@ const PianoTilesGame: React.FC = () => {
       setScore((prev) => prev + finalScore);
       setClickedTile(null);
     }
-  }, [clickedTile, address, scoreMultiplier, currentBonusImage]);
-
-  const triggerTX = (count: number) => {
-    if (!address) return;
-
-    // Incrémenter le compteur de transactions
-    setTxCount((prev) => prev + count);
-
-    // Utiliser un index aléatoire pour le premier relayer
-    const startIndex = Math.floor(Math.random() * 3);
-
-    // Distribuer les transactions entre les relayers
-    Array.from({ length: count }).forEach((_, index) => {
-      const relayerIndex = (startIndex + index) % 3;
-
-      fetch("/api/relay", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          playerAddress: address,
-          action: "click",
-          relayerIndex: relayerIndex,
-        }),
-      }).catch((error) => console.error("Error sending tx:", error));
-    });
-  };
+  }, [
+    clickedTile,
+    address,
+    scoreMultiplier,
+    currentBonusImage,
+    sendTransaction,
+  ]);
 
   const addressSlicer = (address?: string, endCut = 4) => {
     if (!address) return "...";
@@ -779,6 +809,12 @@ const PianoTilesGame: React.FC = () => {
         <h2 className="text-4xl text-white font-bold uppercase italic mb-3">
           Leaderboard
         </h2>
+
+        {/* Message de mise à jour */}
+        <div className="text-yellow-300 text-center mb-4 text-sm">
+          Leaderboard updates once every 2 hours
+        </div>
+
         <div className="w-full max-h-[470px] overflow-y-auto hide-scrollbar rounded-md p-4">
           <div className="w-full max-h-[470px]">
             <table className="min-w-full text-left text-xl">
@@ -885,7 +921,7 @@ const PianoTilesGame: React.FC = () => {
           height={120}
           unoptimized
         />
-        <div className="flex justify-center gap-10 items-center mt-[80px] mb-[50px]">
+        <div className="flex justify-center gap-10 items-center mt-[80px] mb-[50px] relative">
           <div className="flex flex-col items-center">
             <p className="text-xl text-white mb-0 leading-[18px] uppercase">
               Your score
@@ -898,23 +934,32 @@ const PianoTilesGame: React.FC = () => {
             </p>
             <p className="text-6xl text-yellow-300 mt-2 font-bold">{txCount}</p>
           </div>
+          {isSubmittingScore && (
+            <div className="mt-4 absolute flex items-center w-fit -bottom-10">
+              <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#a1055c]"></div>
+              <p className="text-white ml-4">Submitting score...</p>
+            </div>
+          )}
         </div>
+
         <div className="flex items-center gap-5 mt-[60px]">
           <button
             onClick={() => setShowSettings(true)}
             className="px-3 py-1.5 bg-[#a1055c] text-3xl h-[50px] uppercase text-white rounded-md"
+            disabled={isSubmittingScore}
           >
             <IoSettingsSharp />
           </button>
           <button
             onClick={startGame}
-            className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out"
+            className={`font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out `}
           >
             REPLAY
           </button>
           <button
             onClick={() => setShowLeaderboard(true)}
             className="px-3 py-1.5 bg-[#a1055c] text-4xl h-[50px] uppercase text-white rounded-md"
+            disabled={isSubmittingScore}
           >
             <FaRankingStar />
           </button>
