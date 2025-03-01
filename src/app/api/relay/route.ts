@@ -3,7 +3,13 @@ import {
   PIANO_CONTRACT_ADDRESS as CONTRACT_ADDRESS,
 } from "@/constant/pianoTiles";
 import { NextResponse } from "next/server";
-import { Chain, createWalletClient, getContract, http } from "viem";
+import {
+  Chain,
+  createPublicClient,
+  createWalletClient,
+  getContract,
+  http,
+} from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 
 const RELAYER_PRIVATE_KEYS = (process.env.RELAYER_PKS || "")
@@ -181,7 +187,7 @@ async function processRelayerQueue(relayerPk: `0x${string}`) {
 
   relayer.processing = true;
 
-  const batchSize = 3;
+  const batchSize = 6;
 
   while (relayer.queue.length > 0) {
     const batch = relayer.queue.splice(0, batchSize);
@@ -255,3 +261,56 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Request failed" }, { status: 500 });
   }
 }
+
+// Ajouter une fonction pour vérifier les balances des relayers
+async function checkRelayerBalances() {
+  console.log("=== RELAYER BALANCES ===");
+
+  for (const relayerPk of RELAYER_PRIVATE_KEYS) {
+    try {
+      const account = privateKeyToAccount(relayerPk);
+      const transport = http(RPC_URL);
+
+      const publicClient = createPublicClient({
+        chain: { id: CHAIN_ID } as Chain,
+        transport,
+      });
+
+      const balance = await publicClient.getBalance({
+        address: account.address,
+      });
+
+      // Convertir en format lisible (MONAD)
+      const balanceInMonad = Number(balance) / 1e18;
+
+      console.log(
+        `Relayer ${account.address.slice(0, 10)}... : ${balanceInMonad.toFixed(
+          4
+        )} MONAD`
+      );
+
+      // Ajouter un avertissement si le solde est faible
+      if (balanceInMonad < 0.01) {
+        console.warn(
+          `⚠️ WARNING: Relayer ${account.address.slice(
+            0,
+            10
+          )}... has low balance!`
+        );
+      }
+    } catch (error) {
+      console.error(
+        `Failed to get balance for relayer ${relayerPk.slice(0, 10)}...`,
+        error
+      );
+    }
+  }
+
+  console.log("=======================");
+}
+
+// Appeler cette fonction au démarrage du serveur
+checkRelayerBalances();
+
+// Vérifier les balances toutes les 10 minutes
+setInterval(checkRelayerBalances, 10 * 60 * 1000);
