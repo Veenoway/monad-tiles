@@ -60,6 +60,10 @@ function isInsufficientFundsError(error: TransactionError): boolean {
   );
 }
 
+let lastRelayerIndex = 0;
+
+const busyRelayers = new Set<string>();
+
 async function processTransaction(
   relayerPk: `0x${string}`,
   playerAddress: string,
@@ -69,6 +73,11 @@ async function processTransaction(
 ): Promise<string> {
   const relayer = relayers.get(relayerPk)!;
   const account = privateKeyToAccount(relayerPk);
+
+  // Ajouter des logs pour le suivi
+  console.log(
+    `Using relayer: ${account.address.slice(0, 10)}... for ${action}`
+  );
 
   const fastTransport = http(RPC_URL, {
     timeout: 10000,
@@ -92,27 +101,28 @@ async function processTransaction(
     client: walletClient,
   });
 
-  if (relayer.currentNonce === null) {
-    try {
-      const nonceHex = await walletClient.request({
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        method: "eth_getTransactionCount",
-        params: [account.address, "pending"],
-      });
-      relayer.currentNonce = parseInt(String(nonceHex), 16);
-    } catch (error) {
-      console.error("Failed to get nonce:", error);
-      relayer.currentNonce = 0;
-    }
+  // Toujours récupérer le nonce le plus récent pour éviter les problèmes
+  try {
+    const nonceHex = await walletClient.request({
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      method: "eth_getTransactionCount",
+      params: [account.address, "pending"],
+    });
+    relayer.currentNonce = parseInt(String(nonceHex), 16);
+  } catch (error) {
+    console.error("Failed to get nonce:", error);
+    relayer.currentNonce = 0;
   }
 
   const txOptions = { nonce: relayer.currentNonce };
   relayer.currentNonce++;
 
   try {
+    let txHash: string;
+
     if (action === "click") {
-      return await contract.write.click(
+      txHash = await contract.write.click(
         [playerAddress as `0x${string}`],
         txOptions
       );
@@ -122,25 +132,35 @@ async function processTransaction(
           "Invalid or missing 'score' parameter for submitScore action."
         );
       }
-      return await contract.write.submitScore(
+      txHash = await contract.write.submitScore(
         [score, playerAddress as `0x${string}`],
         txOptions
       );
+    } else {
+      throw new Error("Invalid action");
     }
-    throw new Error("Invalid action");
+
+    // Ajouter un log pour confirmer l'envoi de la transaction
+    console.log(`Transaction ${txHash.slice(0, 10)}... sent successfully`);
+
+    return txHash;
   } catch (error) {
     const txError = error as TransactionError;
 
     if (isInsufficientFundsError(txError)) {
       retriedRelayers.add(relayerPk);
 
+      // Trouver un relayer disponible qui n'a pas déjà été essayé
       const availableRelayer = Array.from(relayers.keys()).find(
-        (pk) => !retriedRelayers.has(pk)
+        (pk) => !retriedRelayers.has(pk) && !busyRelayers.has(pk)
       );
 
       if (availableRelayer) {
         console.log(
-          `Relayer ${relayerPk} out of funds, switching to ${availableRelayer}`
+          `Relayer ${relayerPk.slice(
+            0,
+            10
+          )}... out of funds, switching to ${availableRelayer.slice(0, 10)}...`
         );
         return processTransaction(
           availableRelayer as `0x${string}`,
@@ -155,6 +175,10 @@ async function processTransaction(
     }
 
     if (txError.message?.includes("Nonce too low")) {
+      console.log(
+        `Nonce too low for ${account.address.slice(0, 10)}..., refreshing nonce`
+      );
+
       const nonceHex = await walletClient.request({
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
@@ -177,67 +201,110 @@ async function processTransaction(
         );
       }
     }
+
+    console.error(
+      `Transaction error with relayer ${account.address.slice(0, 10)}...`,
+      txError
+    );
     throw error;
   }
 }
 
+// Améliorer la fonction de traitement de la file d'attente
 async function processRelayerQueue(relayerPk: `0x${string}`) {
   const relayer = relayers.get(relayerPk)!;
   if (relayer.processing) return;
 
   relayer.processing = true;
+  busyRelayers.add(relayerPk);
 
-  const batchSize = 6;
+  try {
+    const batchSize = 6; // Traiter 6 transactions à la fois
 
-  while (relayer.queue.length > 0) {
-    const batch = relayer.queue.splice(0, batchSize);
+    while (relayer.queue.length > 0) {
+      const batch = relayer.queue.splice(0, batchSize);
+      console.log(
+        `Processing batch of ${
+          batch.length
+        } transactions with relayer ${relayerPk.slice(0, 10)}...`
+      );
 
-    await Promise.all(
-      batch.map(async (item) => {
-        try {
-          const txHash = await processTransaction(
-            relayerPk,
-            item.playerAddress,
-            item.action,
-            item.score,
-            new Set()
-          );
-          item.resolve(txHash);
-        } catch (error) {
-          if ((error as Error).message === "All relayers are out of funds") {
-            console.error("Critical: All relayers are out of funds");
+      // Traiter les transactions en parallèle pour plus de rapidité
+      await Promise.all(
+        batch.map(async (item) => {
+          const startTime = Date.now();
+          try {
+            const txHash = await processTransaction(
+              relayerPk,
+              item.playerAddress,
+              item.action,
+              item.score,
+              new Set()
+            );
+            item.resolve(txHash);
+            console.log(`Transaction completed in ${Date.now() - startTime}ms`);
+          } catch (error) {
+            if ((error as Error).message === "All relayers are out of funds") {
+              console.error("Critical: All relayers are out of funds");
+            }
+            item.reject(error as { message: string });
+            console.error(
+              `Transaction failed after ${Date.now() - startTime}ms:`,
+              error
+            );
           }
-          item.reject(error as { message: string });
-        }
-      })
+        })
+      );
+    }
+  } finally {
+    relayer.processing = false;
+    busyRelayers.delete(relayerPk);
+    console.log(
+      `Relayer ${relayerPk.slice(0, 10)}... queue processing completed`
     );
   }
-
-  relayer.processing = false;
 }
 
+// Améliorer la fonction pour sélectionner le meilleur relayer disponible
+function selectBestRelayer(relayerIndex?: number): `0x${string}` {
+  const relayerKeys = Array.from(relayers.keys()) as `0x${string}`[];
+
+  // Si un index spécifique est fourni, l'utiliser
+  if (relayerIndex !== undefined) {
+    return relayerKeys[relayerIndex % relayerKeys.length];
+  }
+
+  // Stratégie 1: Trouver un relayer qui n'est pas occupé
+  const availableRelayer = relayerKeys.find((pk) => !busyRelayers.has(pk));
+  if (availableRelayer) {
+    return availableRelayer;
+  }
+
+  // Stratégie 2: Rotation simple (round-robin)
+  lastRelayerIndex = (lastRelayerIndex + 1) % relayerKeys.length;
+  return relayerKeys[lastRelayerIndex];
+
+  // Stratégie 3 (fallback): Relayer avec la file d'attente la plus courte
+  /* return Array.from(relayers.entries()).reduce(
+    (min, [pk, state]) => {
+      return state.queue.length < min[1].queue.length ? [pk, state] : min;
+    },
+    [relayerKeys[0], relayers.get(relayerKeys[0])!]
+  )[0] as `0x${string}`; */
+}
+
+// Améliorer la fonction POST pour mieux distribuer les transactions
 export async function POST(req: Request) {
   try {
-    const { playerAddress, action, score, relayerIndex = 0 } = await req.json();
+    const { playerAddress, action, score, relayerIndex } = await req.json();
     if (!playerAddress || !action) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
-    const relayerKeys = Array.from(relayers.keys());
+    // Sélectionner le meilleur relayer disponible
+    const selectedRelayer = selectBestRelayer(relayerIndex);
 
-    let selectedRelayer: string;
-
-    if (relayerIndex !== undefined) {
-      selectedRelayer = relayerKeys[relayerIndex % relayerKeys.length];
-    } else {
-      selectedRelayer = Array.from(relayers.entries()).reduce(
-        (min, [pk, state]) => {
-          return state.queue.length < min[1].queue.length ? [pk, state] : min;
-        },
-        [relayerKeys[0], relayers.get(relayerKeys[0])!]
-      )[0];
-    }
-
+    // Ajouter la transaction à la file d'attente du relayer sélectionné
     relayers.get(selectedRelayer)!.queue.push({
       playerAddress,
       action,
@@ -246,7 +313,11 @@ export async function POST(req: Request) {
       reject: (error) => console.error("Background processing error:", error),
     });
 
-    setTimeout(() => processRelayerQueue(selectedRelayer as `0x${string}`), 0);
+    // Démarrer le traitement de la file d'attente immédiatement
+    setTimeout(() => processRelayerQueue(selectedRelayer), 0);
+
+    // Ajouter des informations sur le relayer utilisé et la taille de sa file d'attente
+    const queueLength = relayers.get(selectedRelayer)!.queue.length;
 
     return NextResponse.json({
       success: true,
@@ -255,6 +326,9 @@ export async function POST(req: Request) {
         6
       )}...`,
       relayerUsed: selectedRelayer.slice(0, 6) + "...",
+      queuePosition: queueLength,
+      totalRelayers: RELAYER_PRIVATE_KEYS.length,
+      activeRelayers: RELAYER_PRIVATE_KEYS.length - busyRelayers.size,
     });
   } catch (error) {
     console.error("Relayer error:", error);
