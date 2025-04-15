@@ -421,10 +421,10 @@ const PianoTilesGame: React.FC = () => {
   };
 
   const startGame = async () => {
-    if (!address) {
-      setIsOpen(true);
-      return;
-    }
+    // if (!address) {
+    //   setIsOpen(true);
+    //   return;
+    // }
 
     // Réinitialiser le compteur de transactions
     setTxCount(0);
@@ -476,33 +476,33 @@ const PianoTilesGame: React.FC = () => {
     setCurrentBonusImage("");
 
     // Indiquer que la soumission du score commence
-    setIsSubmittingScore(true);
+    // setIsSubmittingScore(true);
 
     // Soumettre le score immédiatement sans délai
-    const relayerIndex = Math.floor(Math.random() * 3);
+    // const relayerIndex = Math.floor(Math.random() * 3);
 
-    fetch("/api/relay", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache", // Éviter la mise en cache
-      },
-      body: JSON.stringify({
-        playerAddress: address,
-        action: "submitScore",
-        score: finalScore,
-        relayerIndex: relayerIndex,
-      }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Score submitted:", data);
-        setIsSubmittingScore(false);
-      })
-      .catch((error) => {
-        console.error("Error submitting score:", error);
-        setIsSubmittingScore(false);
-      });
+    // fetch("/api/relay", {
+    //   method: "POST",
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //     "Cache-Control": "no-cache", // Éviter la mise en cache
+    //   },
+    //   body: JSON.stringify({
+    //     playerAddress: address,
+    //     action: "submitScore",
+    //     score: finalScore,
+    //     relayerIndex: relayerIndex,
+    //   }),
+    // })
+    //   .then((response) => response.json())
+    //   .then((data) => {
+    //     console.log("Score submitted:", data);
+    //     setIsSubmittingScore(false);
+    //   })
+    //   .catch((error) => {
+    //     console.error("Error submitting score:", error);
+    //     setIsSubmittingScore(false);
+    //   });
   }, [score, address]);
 
   useEffect(() => {
@@ -603,30 +603,30 @@ const PianoTilesGame: React.FC = () => {
 
   const sendTransaction = useCallback(
     async (count: number = 1) => {
-      if (!address) return;
+      // if (!address) return;
 
       setTxCount((prev) => prev + count);
 
       // Distribuer les transactions entre tous les relayers
-      Array.from({ length: count }).forEach((_, index) => {
-        // Utiliser un index différent pour chaque transaction
-        const relayerIndex = index % 6; // Utiliser les 6 relayers en rotation
+      // Array.from({ length: count }).forEach((_, index) => {
+      //   // Utiliser un index différent pour chaque transaction
+      //   const relayerIndex = index % 6; // Utiliser les 6 relayers en rotation
 
-        fetch("/api/relay", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Cache-Control": "no-cache",
-          },
-          body: JSON.stringify({
-            playerAddress: address,
-            action: "click",
-            relayerIndex,
-          }),
-        }).catch((error) => {
-          console.error("Error sending transaction:", error);
-        });
-      });
+      //   fetch("/api/relay", {
+      //     method: "POST",
+      //     headers: {
+      //       "Content-Type": "application/json",
+      //       "Cache-Control": "no-cache",
+      //     },
+      //     body: JSON.stringify({
+      //       playerAddress: address,
+      //       action: "click",
+      //       relayerIndex,
+      //     }),
+      //   }).catch((error) => {
+      //     console.error("Error sending transaction:", error);
+      //   });
+      // });
     },
     [address]
   );
@@ -689,7 +689,8 @@ const PianoTilesGame: React.FC = () => {
         txCount = 2;
       }
       txCount *= scoreMultiplier;
-      sendTransaction(txCount);
+      console.log("txCount", txCount);
+      // sendTransaction(txCount);
       const baseScore = clickedTile.isBonus ? 4 : 1;
       const finalScore = baseScore * scoreMultiplier;
       if (clickedTile.isBonus) {
@@ -1058,11 +1059,12 @@ const PianoTilesGame: React.FC = () => {
       <div className="w-full justify-between flex items-center bg-[#190e59] py-5 px-5 relative">
         <div className="flex flex-col items-center">
           <p className="text-lg text-cyan-300 mb-0 leading-[18px]">
-            Best Score
+            {/* Best Score */}
+            GL HF
           </p>
-          <p className="text-2xl text-white font-bold mt-0">
+          {/* <p className="text-2xl text-white font-bold mt-0">
             {Number((currentGlobalCount as [bigint])?.[0] as bigint) || 0}
-          </p>
+          </p> */}
         </div>
         <Image
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
