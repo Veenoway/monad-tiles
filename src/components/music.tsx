@@ -172,7 +172,7 @@ const PianoTilesGame: React.FC = () => {
 
   const [clickedTile, setClickedTile] = useState<Tile | null>(null);
 
-  const [isSubmittingScore, setIsSubmittingScore] = useState<boolean>(false);
+  const [isSubmittingScore] = useState<boolean>(false);
 
   useEffect(() => {
     audioRef.current = new Audio("/bloop-1.mp3");
@@ -215,7 +215,6 @@ const PianoTilesGame: React.FC = () => {
     setIsMuted((prev) => {
       const newMuted = !prev;
 
-      // Mettre à jour immédiatement tous les sons actifs
       if (bgMusicRef.current) bgMusicRef.current.muted = newMuted;
       if (menuBgMusicRef.current) menuBgMusicRef.current.muted = newMuted;
       if (gameOverBgMusicRef.current)
@@ -398,7 +397,6 @@ const PianoTilesGame: React.FC = () => {
     setRows((prev) => [...prev, newTile]);
   };
 
-  // Vérification automatique pour maintenir le nombre de tuiles
   useEffect(() => {
     if (!isPlaying) return;
     const target = Math.ceil(containerHeight / (rowHeight + gap)) + 2;
@@ -426,13 +424,10 @@ const PianoTilesGame: React.FC = () => {
     //   return;
     // }
 
-    // Réinitialiser le compteur de transactions
     setTxCount(0);
 
-    // Arrêter tous les sons avant de commencer
     stopAllSounds();
 
-    // Réinitialiser explicitement la musique de game over
     if (gameOverBgMusicRef.current) {
       gameOverBgMusicRef.current.pause();
       gameOverBgMusicRef.current.currentTime = 0;
@@ -464,7 +459,6 @@ const PianoTilesGame: React.FC = () => {
     setIsPlaying(false);
     setGameOver(true);
 
-    // Nettoyer les timers
     if (animTimerRef.current) clearInterval(animTimerRef.current);
     if (accelTimerRef.current) clearInterval(accelTimerRef.current);
     if (bonusTimerRef.current) {
@@ -508,17 +502,15 @@ const PianoTilesGame: React.FC = () => {
   useEffect(() => {
     if (!isPlaying) return;
 
-    let gameEnded = false; // Variable pour éviter les doubles appels
+    let gameEnded = false;
 
     animTimerRef.current = setInterval(() => {
       setRows((prevRows) => {
         let missedCount = 0;
         const updatedRows = prevRows
           .map((row) => {
-            // Marquer les tuiles comme traitées pour éviter les doubles pénalités
             if (row.top >= containerHeight && !row.processed) {
               row.processed = true;
-              // Ne pas pénaliser pour les tuiles bonus ou spéciales
               if (!row.isBonus && !row.specialBonus) missedCount++;
             }
             return { ...row, top: row.top + tileSpeed };
@@ -535,7 +527,6 @@ const PianoTilesGame: React.FC = () => {
             gameEnded = true;
             setLives(0);
 
-            // Utiliser setTimeout pour éviter les problèmes de synchronisation
             setTimeout(() => {
               setGameOver(true);
               setIsPlaying(false);
@@ -811,7 +802,6 @@ const PianoTilesGame: React.FC = () => {
           Leaderboard
         </h2>
 
-        {/* Message de mise à jour */}
         <div className="text-yellow-300 text-center mb-4 text-sm">
           Leaderboard updates once every 2 hours
         </div>
