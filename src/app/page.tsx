@@ -1,5 +1,3 @@
-import { Home } from "@/features/home";
-
 export default function HomePage() {
   return (
     <main
@@ -11,7 +9,10 @@ export default function HomePage() {
         fontFamily: "Boogaloo",
       }}
     >
-      <Home />
+      <h1 className="text-3xl lg:text-6xl font-bold">Will be back soon</h1>
+      <p className="mt-4 text-lg lg:text-2xl">
+        We are currently performing maintenance. Please check back later.
+      </p>
     </main>
   );
 }
