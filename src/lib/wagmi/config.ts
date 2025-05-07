@@ -60,7 +60,7 @@ export const monadTestnet = {
 //   },
 // };
 
-export const projectId = "71cb70b160a3c0bdf69a9b358d250c4c";
+export const projectId = "";
 
 if (!projectId) throw new Error("Project ID is not defined");
 
