@@ -1,18 +1,35 @@
-export default function HomePage() {
+import AddFrameButton from "@/components/framer";
+import { Home as HomeComponent } from "@/features/home";
+import { Metadata } from "next";
+
+export default function Home() {
   return (
-    <main
-      className="w-screen flex items-center justify-center flex-col min-h-screen pb-[100px] font-montserrat"
-      style={{
-        background: "url('/background/bg-site.jpg')",
-        backgroundSize: "cover",
-        backgroundRepeat: "no-repeat",
-        fontFamily: "Boogaloo",
-      }}
-    >
-      <h1 className="text-3xl lg:text-6xl font-bold">Will be back soon</h1>
-      <p className="mt-4 text-lg lg:text-2xl">
-        We are currently performing maintenance. Please check back later.
-      </p>
-    </main>
+    <>
+      <HomeComponent />
+      <AddFrameButton />
+    </>
   );
 }
+
+const appUrl = process.env.NEXT_PUBLIC_URL;
+
+export const metadata: Metadata = {
+  title: "Monad Tiles",
+  description: "Monad tiles is a web3 game aiming to stress the Monad testnet.",
+  other: {
+    "fc:frame": JSON.stringify({
+      version: "next",
+      imageUrl: `${appUrl}/MonadTiles.jpg`, // Embed image URL (3:2 image ratio)
+      button: {
+        title: "Monad Tiles", // Text on the embed button
+        action: {
+          type: "launch_frame",
+          name: "Monad Tiles",
+          url: appUrl, // URL that is opened when the embed button is tapped or clicked.
+          splashImageUrl: `${appUrl}/MonadTiles.jpg`,
+          splashBackgroundColor: "#050505",
+        },
+      },
+    }),
+  },
+};

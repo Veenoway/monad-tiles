@@ -1,82 +1,93 @@
 "use client";
-
-import { useModalStore } from "@/store/modalStore";
-import { useEffect, useState } from "react";
-import { useAccount, useDisconnect, useSwitchChain } from "wagmi";
-import { WalletModal } from "./connector-modal";
+import { useMiniAppContext } from "@/hook/useMiniApp";
+import { monadTestnet } from "@/lib/wagmi/config";
+import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
+import { useEffect } from "react";
+import { useAccount, useConnect, useDisconnect, useSwitchChain } from "wagmi";
 
 export function WalletConnection() {
-  const { setIsOpen } = useModalStore();
-  const { address, isConnecting, chainId } = useAccount();
+  const context = useMiniAppContext();
+  const { isEthProviderAvailable } = context;
+  const { isConnected, address, chainId } = useAccount();
   const { disconnect } = useDisconnect();
-  const { switchChainAsync } = useSwitchChain();
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const { switchChain } = useSwitchChain();
+  const { connect } = useConnect();
 
+  // Contract write hook
+
+  // Oyun başladığında default chain Monad Testnet olsun
   useEffect(() => {
-    if (address) {
-      setIsInitialLoading(false);
+    if (isConnected && chainId !== monadTestnet.id) {
+      switchChain({ chainId: monadTestnet.id });
     }
-  }, [address]);
-
-  const getDisplayText = () => {
-    if (isConnecting || isInitialLoading) return "Loading...";
-    return `${address?.slice(0, 6)}...${address?.slice(-4)}`;
-  };
-  console.log("chainID;", chainId);
-  const isWrongNetwork = chainId !== 10143;
-
-  const handleSwitchNetwork = async () => {
-    try {
-      await switchChainAsync({
-        chainId: 10143,
-      });
-    } catch (err) {
-      console.error("Failed to switch network:", err);
-    }
-  };
-
-  const handleDisconnect = async () => {
-    try {
-      disconnect();
-    } catch (err) {
-      console.error("Failed to disconnect:", err);
-    }
-  };
-
-  if (address && isWrongNetwork) {
-    return (
-      <button
-        onClick={handleSwitchNetwork}
-        className=" bg-[#a1055c] rounded-lg h-[50px] px-4 font-bold text-xl uppercase min-w-[170px]"
-      >
-        Switch to Monad Testnet
-      </button>
-    );
-  }
+  }, [isConnected, chainId, switchChain]);
 
   return (
-    <div>
-      {!address && (
-        <WalletModal>
+    <div className="space-y-4 border border-[#333] rounded-md p-4">
+      <h2 className="text-xl font-bold text-left" style={{ color: "#FBFAF9" }}>
+        Connected Wallet
+      </h2>
+      <div className="flex flex-row space-x-4 justify-start items-start">
+        {isConnected ? (
+          <div className="flex flex-col space-y-4 justify-start">
+            <p
+              className="text-sm text-left"
+              style={{ color: "#FBFAF9", fontWeight: "bold" }}
+            >
+              Connected to wallet:{" "}
+              <span
+                className="bg-white font-mono text-black rounded-md p-[4px]"
+                style={{ background: "rgba(32,0,82,0.95)", color: "#fff" }}
+              >
+                {address}
+              </span>
+            </p>
+            <p
+              className="text-sm text-left"
+              style={{ color: "#FBFAF9", fontWeight: "bold" }}
+            >
+              Chain Id:{" "}
+              <span
+                className="bg-white font-mono text-black rounded-md p-[4px]"
+                style={{ background: "rgba(32,0,82,0.95)", color: "#fff" }}
+              >
+                {chainId}
+              </span>
+            </p>
+            {chainId === monadTestnet.id ? (
+              <></>
+            ) : (
+              <button
+                className="rounded-md p-2 text-sm font-bold w-full"
+                style={{ background: "rgba(32,0,82,0.85)", color: "#fff" }}
+                onClick={() => switchChain({ chainId: monadTestnet.id })}
+              >
+                Switch to Monad Testnet
+              </button>
+            )}
+
+            <button
+              className="rounded-md p-2 text-sm font-bold w-full"
+              style={{ background: "rgba(32,0,82,0.85)", color: "#fff" }}
+              onClick={() => disconnect()}
+            >
+              Disconnect Wallet
+            </button>
+          </div>
+        ) : isEthProviderAvailable ? (
           <button
-            onClick={() => setIsOpen(true)}
-            className=" bg-[#a1055c] rounded-lg h-[50px] px-2 font-bold text-xl uppercase min-w-[170px]"
+            className="rounded-md p-2 text-sm font-bold w-full"
+            style={{ background: "rgba(32,0,82,0.85)", color: "#fff" }}
+            onClick={() => connect({ connector: farcasterFrame() })}
           >
             Connect Wallet
           </button>
-        </WalletModal>
-      )}
-
-      {address && !isWrongNetwork && (
-        <div className="flex items-center gap-4">
-          <button
-            onClick={handleDisconnect}
-            className=" bg-[#a1055c] rounded-lg h-[50px] px-2 font-bold text-xl uppercase min-w-[170px]"
-          >
-            {getDisplayText()}
-          </button>
-        </div>
-      )}
+        ) : (
+          <p className="text-sm text-left">
+            Wallet connection only via Warpcast
+          </p>
+        )}
+      </div>
     </div>
   );
 }

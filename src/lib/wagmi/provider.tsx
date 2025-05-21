@@ -1,28 +1,8 @@
 "use client";
+import { ReactNode } from "react";
+import { WagmiProvider } from "wagmi";
+import { config } from "./config";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { type ReactNode } from "react";
-import { cookieToInitialState, WagmiProvider } from "wagmi";
-import { wagmiAdapter } from "./config";
-
-const queryClient = new QueryClient();
-
-function ContextProvider({
-  children,
-  cookies,
-}: {
-  children: ReactNode;
-  cookies: string | null;
-}) {
-  const initialState = cookieToInitialState(wagmiAdapter.wagmiConfig, cookies);
-  return (
-    <WagmiProvider
-      config={wagmiAdapter.wagmiConfig}
-      initialState={initialState}
-    >
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    </WagmiProvider>
-  );
+export default function WagmiProviders({ children }: { children: ReactNode }) {
+  return <WagmiProvider config={config}>{children}</WagmiProvider>;
 }
-
-export default ContextProvider;

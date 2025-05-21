@@ -1,4 +1,6 @@
 "use client";
+import { FarcasterActions } from "@/components/actions";
+import { WalletConnection } from "@/components/connector";
 import PianoTilesGame from "@/components/music";
 
 export const Home = () => {
@@ -13,15 +15,16 @@ export const Home = () => {
       }}
     >
       <div className="w-full sm:w-[95%] mx-auto lg:pt-10 gap-8">
-        {/* <div className="absolute right-5 top-5 hidden lg:flex">
+        <div className="absolute right-5 top-5 hidden lg:flex">
           <WalletConnection />
-        </div> */}
+        </div>
         <div className="w-full mx-auto">
           <PianoTilesGame />
         </div>
-        {/* <div className="flex lg:hidden items-center justify-center mt-5">
+        <div className="flex lg:hidden items-center justify-center mt-5">
           <WalletConnection />
-        </div> */}
+        </div>{" "}
+        <FarcasterActions />
       </div>
     </main>
   );

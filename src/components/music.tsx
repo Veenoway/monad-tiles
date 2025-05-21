@@ -115,7 +115,7 @@ type LeaderboardEntry = [string, number, number];
 const PianoTilesGame: React.FC = () => {
   const { setIsOpen } = useModalStore();
   const { address } = useAccount();
-  const { userRank, currentGlobalCount, leaderboardFormatted } =
+  const { userRank, currentGlobalCount, leaderboardFormatted, click } =
     usePianoRelay();
 
   const containerHeight = 600;
@@ -172,10 +172,10 @@ const PianoTilesGame: React.FC = () => {
 
   const [clickedTile, setClickedTile] = useState<Tile | null>(null);
 
-  const [isSubmittingScore] = useState<boolean>(false);
+  const [isSubmittingScore, setIsSubmittingScore] = useState<boolean>(false);
 
   useEffect(() => {
-    audioRef.current = new Audio("/bloop-1.mp3");
+    // audioRef.current = new Audio("/bloop-1.mp3");
     bonusAudioRefs.current = bonusSongs.map((song) => new Audio(song));
     specialBonusAudioRef.current = new Audio(specialBonusSoundPath);
   }, []);
@@ -419,10 +419,10 @@ const PianoTilesGame: React.FC = () => {
   };
 
   const startGame = async () => {
-    // if (!address) {
-    //   setIsOpen(true);
-    //   return;
-    // }
+    if (!address) {
+      setIsOpen(true);
+      return;
+    }
 
     setTxCount(0);
 
@@ -470,33 +470,33 @@ const PianoTilesGame: React.FC = () => {
     setCurrentBonusImage("");
 
     // Indiquer que la soumission du score commence
-    // setIsSubmittingScore(true);
+    setIsSubmittingScore(true);
 
     // Soumettre le score immédiatement sans délai
-    // const relayerIndex = Math.floor(Math.random() * 3);
+    const relayerIndex = Math.floor(Math.random() * 3);
 
-    // fetch("/api/relay", {
-    //   method: "POST",
-    //   headers: {
-    //     "Content-Type": "application/json",
-    //     "Cache-Control": "no-cache", // Éviter la mise en cache
-    //   },
-    //   body: JSON.stringify({
-    //     playerAddress: address,
-    //     action: "submitScore",
-    //     score: finalScore,
-    //     relayerIndex: relayerIndex,
-    //   }),
-    // })
-    //   .then((response) => response.json())
-    //   .then((data) => {
-    //     console.log("Score submitted:", data);
-    //     setIsSubmittingScore(false);
-    //   })
-    //   .catch((error) => {
-    //     console.error("Error submitting score:", error);
-    //     setIsSubmittingScore(false);
-    //   });
+    fetch("/api/relay", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-cache", // Éviter la mise en cache
+      },
+      body: JSON.stringify({
+        playerAddress: address,
+        action: "submitScore",
+        score: finalScore,
+        relayerIndex: relayerIndex,
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Score submitted:", data);
+        setIsSubmittingScore(false);
+      })
+      .catch((error) => {
+        console.error("Error submitting score:", error);
+        setIsSubmittingScore(false);
+      });
   }, [score, address]);
 
   useEffect(() => {
@@ -586,6 +586,9 @@ const PianoTilesGame: React.FC = () => {
         const newRows = [...prevRows];
         newRows.splice(tileIndex, 1);
         setClickedTile(newTile);
+        if (address) {
+          click(address);
+        }
         return newRows;
       }
       return prevRows;
@@ -594,30 +597,30 @@ const PianoTilesGame: React.FC = () => {
 
   const sendTransaction = useCallback(
     async (count: number = 1) => {
-      // if (!address) return;
+      if (!address) return;
 
       setTxCount((prev) => prev + count);
 
       // Distribuer les transactions entre tous les relayers
-      // Array.from({ length: count }).forEach((_, index) => {
-      //   // Utiliser un index différent pour chaque transaction
-      //   const relayerIndex = index % 6; // Utiliser les 6 relayers en rotation
+      Array.from({ length: count }).forEach((_, index) => {
+        // Utiliser un index différent pour chaque transaction
+        const relayerIndex = index % 6; // Utiliser les 6 relayers en rotation
 
-      //   fetch("/api/relay", {
-      //     method: "POST",
-      //     headers: {
-      //       "Content-Type": "application/json",
-      //       "Cache-Control": "no-cache",
-      //     },
-      //     body: JSON.stringify({
-      //       playerAddress: address,
-      //       action: "click",
-      //       relayerIndex,
-      //     }),
-      //   }).catch((error) => {
-      //     console.error("Error sending transaction:", error);
-      //   });
-      // });
+        fetch("/api/relay", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Cache-Control": "no-cache",
+          },
+          body: JSON.stringify({
+            playerAddress: address,
+            action: "click",
+            relayerIndex,
+          }),
+        }).catch((error) => {
+          console.error("Error sending transaction:", error);
+        });
+      });
     },
     [address]
   );
@@ -681,7 +684,7 @@ const PianoTilesGame: React.FC = () => {
       }
       txCount *= scoreMultiplier;
       console.log("txCount", txCount);
-      // sendTransaction(txCount);
+      sendTransaction(txCount);
       const baseScore = clickedTile.isBonus ? 4 : 1;
       const finalScore = baseScore * scoreMultiplier;
       if (clickedTile.isBonus) {
@@ -961,7 +964,7 @@ const PianoTilesGame: React.FC = () => {
 
   return (
     <div
-      className="rounded-2xl relative overflow-hidden shadow-lg shadow-[rgba(0,0,0,0.2)] mx-auto lg:mt-[60px]"
+      className="sm:rounded-2xl relative overflow-hidden shadow-lg shadow-[rgba(0,0,0,0.2)] mx-auto lg:mt-[60px]"
       style={{
         maxWidth: "400px",
         textAlign: "center",

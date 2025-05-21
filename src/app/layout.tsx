@@ -1,7 +1,7 @@
-import ContextProvider from "@/lib/wagmi/provider";
-import type { Metadata } from "next";
+import { MiniAppProvider } from "@/lib/farcaster/context";
+import { FrameProvider } from "@/lib/farcaster/provider";
+import { Metadata } from "next";
 import { Montserrat } from "next/font/google";
-import { headers } from "next/headers";
 import "./globals.css";
 
 const poppins = Montserrat({
@@ -11,20 +11,21 @@ const poppins = Montserrat({
 });
 
 export const metadata: Metadata = {
-  title: "Monad Tiles",
-  description: "Monad tiles is a web3 game aiming to stress the Monad testnet.",
+  title: "Monad Farcaster MiniApp Template",
+  description: "A template for building mini-apps on Farcaster and Monad",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
-  const cookies = (await headers()).get("cookie");
+}) {
   return (
     <html lang="en">
       <body className={`${poppins.variable} antialiased`}>
-        <ContextProvider cookies={cookies}>{children}</ContextProvider>
+        <FrameProvider>
+          <MiniAppProvider>{children}</MiniAppProvider>
+        </FrameProvider>
       </body>
     </html>
   );

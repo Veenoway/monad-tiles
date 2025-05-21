@@ -1,78 +1,31 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
-import { cookieStorage, createStorage } from "wagmi";
+import { farcasterFrame as miniAppConnector } from "@farcaster/frame-wagmi-connector";
+import { createConfig, http } from "wagmi";
 
 export const monadTestnet = {
   id: 10143,
   name: "Monad Testnet",
-  network: "Monad Testnet",
+  network: "monad-testnet",
   nativeCurrency: {
     decimals: 18,
-    name: "TMON",
-    symbol: "TMON",
+    name: "Monad",
+    symbol: "MONAD",
   },
   rpcUrls: {
-    default: {
-      http: [
-        "https://testnet-rpc2.monad.xyz/52227f026fa8fac9e2014c58fbf5643369b3bfc6",
-      ],
-    },
-    public: {
-      http: [
-        "https://testnet-rpc2.monad.xyz/52227f026fa8fac9e2014c58fbf5643369b3bfc6",
-      ],
-    },
+    default: { http: ["https://rpc.testnet.monad.xyz"] },
+    public: { http: ["https://rpc.testnet.monad.xyz"] },
   },
   blockExplorers: {
     default: {
-      name: "MonadScan",
-      url: "https://scan.monad.com",
+      name: "Monad Explorer",
+      url: "https://explorer.testnet.monad.xyz",
     },
   },
 };
 
-// export const monadTestnet = {
-//   id: 20143,
-//   name: "Monad Devnet",
-//   network: "Monad Devnet",
-//   nativeCurrency: {
-//     decimals: 18,
-//     name: "DMON",
-//     symbol: "DMON",
-//   },
-//   rpcUrls: {
-//     default: {
-//       http: [
-//         "https://rpc-devnet.monadinfra.com/rpc/3fe540e310bbb6ef0b9f16cd23073b0a",
-//       ],
-//     },
-//     public: {
-//       http: [
-//         "https://rpc-devnet.monadinfra.com/rpc/3fe540e310bbb6ef0b9f16cd23073b0a",
-//       ],
-//     },
-//   },
-//   blockExplorers: {
-//     default: {
-//       name: "MonadScan",
-//       url: "https://scan.monad.com",
-//     },
-//   },
-// };
-
-export const projectId = "";
-
-if (!projectId) throw new Error("Project ID is not defined");
-
-export const networks = [monadTestnet];
-
-export const wagmiAdapter = new WagmiAdapter({
-  storage: createStorage({
-    storage: cookieStorage,
-  }) as unknown as any,
-  ssr: true,
-  networks,
-  projectId,
+export const config = createConfig({
+  chains: [monadTestnet],
+  transports: {
+    [monadTestnet.id]: http(),
+  },
+  connectors: [miniAppConnector()],
 });
-
-export const config = wagmiAdapter.wagmiConfig;
