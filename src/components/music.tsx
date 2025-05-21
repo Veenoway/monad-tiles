@@ -955,12 +955,12 @@ const PianoTilesGame: React.FC = () => {
             className="px-3 py-1.5 bg-[#a1055c] text-4xl h-[50px] uppercase text-white rounded-md"
             onClick={() =>
               actions?.composeCast({
-                text: "Check out this Monad Farcaster MiniApp Template!",
+                text: `I just scored ${score} points in Monad Tiles!`,
                 embeds: [`https://monadtiles.xyz`],
               })
             }
           >
-            Cast Score
+            Cast
           </button>
         </div>
       </div>
