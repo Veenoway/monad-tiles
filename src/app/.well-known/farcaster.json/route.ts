@@ -6,10 +6,9 @@ const farcasterConfig = {
   accountAssociation: {
     header:
       "eyJmaWQiOjcwMzEwNSwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweGM3ZUIyQUJkMzZFZjI1NkI3ZEU1MkFjMTAzMkI5RDc3NEFFNGREQjEifQ",
-    payload:
-      "eyJkb21haW4iOiJhcnRocml0aXMtcm9tLWluc3RhbGxpbmctbXJuYS50cnljbG91ZGZsYXJlLmNvbSJ9",
+    payload: "eyJkb21haW4iOiJtb25hZHRpbGVzLnh5eiJ9",
     signature:
-      "MHgzYzU5ZDhiOWM5M2MyOGM4ZjQ4N2RmMDMxNGEyNWRhZTE3MTgwYTM3YTJmMGMyNDIzNGJhYTZlOGEwNTI4Y2IzNTFjODU5NzE4ZWVlNzk1NTg1YzAxNGIyNjBlZWM4MmI5NTdmZjMwMjRhMzQ0NzM0NjVlMGJiYjgxNjA2MjU1ZjFj",
+      "MHgyZmNkMzdkZGM4MjhhNDQ1ZmRjMTMwZTRjY2UyNTEyNjZiYTllY2VlMjBkMDA3ODE0NDBjMTBhNTQwNTdhMzY5MWI5MTZhOWQ3M2I5MmFjYzI4NDJiNDM1ZGEwNjVmZjViMDVlYjU0ODE1NzgzZjAxNzE1MmYxOWY3NjI2NmFlMzFj",
   },
   frame: {
     version: "1",
