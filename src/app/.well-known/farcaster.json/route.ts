@@ -20,7 +20,7 @@ const farcasterConfig = {
     tags: ["monad", "farcaster", "miniapp", "game", "tiles"],
     primaryCategory: "games",
     buttonTitle: "Play Monad Tiles",
-    splashImageUrl: `${appUrl}/new-logo.png`,
+    splashImageUrl: `${appUrl}/logo/new-logo.png`,
     splashBackgroundColor: "#190e59",
   },
 };
