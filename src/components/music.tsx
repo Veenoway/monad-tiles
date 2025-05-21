@@ -420,10 +420,10 @@ const PianoTilesGame: React.FC = () => {
   };
 
   const startGame = async () => {
-    if (!address) {
-      setIsOpen(true);
-      return;
-    }
+    // if (!address) {
+    //   setIsOpen(true);
+    //   return;
+    // }
 
     setTxCount(0);
 
