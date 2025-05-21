@@ -74,7 +74,6 @@ async function processTransaction(
   const relayer = relayers.get(relayerPk)!;
   const account = privateKeyToAccount(relayerPk);
 
-  // Ajouter des logs pour le suivi
   console.log(
     `Using relayer: ${account.address.slice(0, 10)}... for ${action}`
   );
@@ -101,7 +100,6 @@ async function processTransaction(
     client: walletClient,
   });
 
-  // Toujours récupérer le nonce le plus récent pour éviter les problèmes
   try {
     const nonceHex = await walletClient.request({
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -140,7 +138,6 @@ async function processTransaction(
       throw new Error("Invalid action");
     }
 
-    // Ajouter un log pour confirmer l'envoi de la transaction
     console.log(`Transaction ${txHash.slice(0, 10)}... sent successfully`);
 
     return txHash;
@@ -150,7 +147,6 @@ async function processTransaction(
     if (isInsufficientFundsError(txError)) {
       retriedRelayers.add(relayerPk);
 
-      // Trouver un relayer disponible qui n'a pas déjà été essayé
       const availableRelayer = Array.from(relayers.keys()).find(
         (pk) => !retriedRelayers.has(pk) && !busyRelayers.has(pk)
       );
@@ -210,7 +206,6 @@ async function processTransaction(
   }
 }
 
-// Améliorer la fonction de traitement de la file d'attente
 async function processRelayerQueue(relayerPk: `0x${string}`) {
   const relayer = relayers.get(relayerPk)!;
   if (relayer.processing) return;
@@ -219,7 +214,7 @@ async function processRelayerQueue(relayerPk: `0x${string}`) {
   busyRelayers.add(relayerPk);
 
   try {
-    const batchSize = 6; // Traiter 6 transactions à la fois
+    const batchSize = 6;
 
     while (relayer.queue.length > 0) {
       const batch = relayer.queue.splice(0, batchSize);
@@ -229,7 +224,6 @@ async function processRelayerQueue(relayerPk: `0x${string}`) {
         } transactions with relayer ${relayerPk.slice(0, 10)}...`
       );
 
-      // Traiter les transactions en parallèle pour plus de rapidité
       await Promise.all(
         batch.map(async (item) => {
           const startTime = Date.now();
@@ -265,35 +259,22 @@ async function processRelayerQueue(relayerPk: `0x${string}`) {
   }
 }
 
-// Améliorer la fonction pour sélectionner le meilleur relayer disponible
 function selectBestRelayer(relayerIndex?: number): `0x${string}` {
   const relayerKeys = Array.from(relayers.keys()) as `0x${string}`[];
 
-  // Si un index spécifique est fourni, l'utiliser
   if (relayerIndex !== undefined) {
     return relayerKeys[relayerIndex % relayerKeys.length];
   }
 
-  // Stratégie 1: Trouver un relayer qui n'est pas occupé
   const availableRelayer = relayerKeys.find((pk) => !busyRelayers.has(pk));
   if (availableRelayer) {
     return availableRelayer;
   }
 
-  // Stratégie 2: Rotation simple (round-robin)
   lastRelayerIndex = (lastRelayerIndex + 1) % relayerKeys.length;
   return relayerKeys[lastRelayerIndex];
-
-  // Stratégie 3 (fallback): Relayer avec la file d'attente la plus courte
-  /* return Array.from(relayers.entries()).reduce(
-    (min, [pk, state]) => {
-      return state.queue.length < min[1].queue.length ? [pk, state] : min;
-    },
-    [relayerKeys[0], relayers.get(relayerKeys[0])!]
-  )[0] as `0x${string}`; */
 }
 
-// Améliorer la fonction POST pour mieux distribuer les transactions
 export async function POST(req: Request) {
   try {
     const { playerAddress, action, score, relayerIndex } = await req.json();
@@ -301,10 +282,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid request" }, { status: 400 });
     }
 
-    // Sélectionner le meilleur relayer disponible
     const selectedRelayer = selectBestRelayer(relayerIndex);
 
-    // Ajouter la transaction à la file d'attente du relayer sélectionné
     relayers.get(selectedRelayer)!.queue.push({
       playerAddress,
       action,
@@ -313,10 +292,8 @@ export async function POST(req: Request) {
       reject: (error) => console.error("Background processing error:", error),
     });
 
-    // Démarrer le traitement de la file d'attente immédiatement
     setTimeout(() => processRelayerQueue(selectedRelayer), 0);
 
-    // Ajouter des informations sur le relayer utilisé et la taille de sa file d'attente
     const queueLength = relayers.get(selectedRelayer)!.queue.length;
 
     return NextResponse.json({
@@ -336,7 +313,6 @@ export async function POST(req: Request) {
   }
 }
 
-// Ajouter une fonction pour vérifier les balances des relayers
 async function checkRelayerBalances() {
   console.log("=== RELAYER BALANCES ===");
 
@@ -354,7 +330,6 @@ async function checkRelayerBalances() {
         address: account.address,
       });
 
-      // Convertir en format lisible (MONAD)
       const balanceInMonad = Number(balance) / 1e18;
 
       console.log(
@@ -363,7 +338,6 @@ async function checkRelayerBalances() {
         )} MONAD`
       );
 
-      // Ajouter un avertissement si le solde est faible
       if (balanceInMonad < 0.01) {
         console.warn(
           `⚠️ WARNING: Relayer ${account.address.slice(
@@ -383,8 +357,6 @@ async function checkRelayerBalances() {
   console.log("=======================");
 }
 
-// Appeler cette fonction au démarrage du serveur
 checkRelayerBalances();
 
-// Vérifier les balances toutes les 10 minutes
 setInterval(checkRelayerBalances, 10 * 60 * 1000);

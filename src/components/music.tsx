@@ -656,13 +656,13 @@ const PianoTilesGame: React.FC = () => {
             addFeedback("Bonus ", "#FF4500");
             bonusTimerRef.current = null;
           }, 30000);
-          txCount = newMultiplier === 2 ? 4 : 8;
+          txCount = 1;
         } else {
           setTileSpeed((prev) => prev * 0.9);
           setSpawnInterval((prev) => prev / 0.9);
           setCurrentBonusImage("/bonus/bonus-fin-2.png");
           addFeedback("Slower!", "#00FF00");
-          txCount = 4;
+          txCount = 1;
         }
         handleClicks();
       } else if (clickedTile.isBonus) {
@@ -675,13 +675,13 @@ const PianoTilesGame: React.FC = () => {
             addFeedback("+1 Life", "#00FF00");
           }
         }
-        txCount = 4;
+        txCount = 1;
       } else {
         if (audioRef.current) {
           audioRef.current.currentTime = 0;
           audioRef.current.play();
         }
-        txCount = 2;
+        txCount = 1;
       }
       txCount *= scoreMultiplier;
       console.log("txCount", txCount);
