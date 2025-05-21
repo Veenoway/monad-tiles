@@ -1,4 +1,5 @@
 "use client";
+import { useMiniAppContext } from "@/hook/useMiniApp";
 import { usePianoRelay } from "@/hook/usePianoTiles";
 import { useModalStore } from "@/store/modalStore";
 import Image from "next/image";
@@ -129,7 +130,7 @@ const PianoTilesGame: React.FC = () => {
   const baselineSpawnIntervalRef = useRef<number>(600);
 
   const gap = 60;
-
+  const { actions } = useMiniAppContext();
   const [rows, setRows] = useState<Tile[]>([]);
   const [score, setScore] = useState<number>(0);
   const [lives, setLives] = useState<number>(10);
@@ -951,11 +952,15 @@ const PianoTilesGame: React.FC = () => {
             REPLAY
           </button>
           <button
-            onClick={() => setShowLeaderboard(true)}
             className="px-3 py-1.5 bg-[#a1055c] text-4xl h-[50px] uppercase text-white rounded-md"
-            disabled={isSubmittingScore}
+            onClick={() =>
+              actions?.composeCast({
+                text: "Check out this Monad Farcaster MiniApp Template!",
+                embeds: [`https://monadtiles.xyz`],
+              })
+            }
           >
-            <FaRankingStar />
+            Cast Score
           </button>
         </div>
       </div>
@@ -1085,6 +1090,7 @@ const PianoTilesGame: React.FC = () => {
           <div className="bg-[#190e59] h-[30px] w-[120px] left-1/2 -translate-x-1/2 bottom-[-30px] absolute z-30 rounded-b-[10px] text-white text-base uppercase">
             Score
           </div>
+
           <div className="left-1/2 -translate-x-1/2 bottom-[-75px] absolute z-30 font-bold text-4xl text-white uppercase">
             {score}
           </div>
