@@ -13,7 +13,7 @@ const farcasterConfig = {
   frame: {
     version: "1",
     name: "Monad Tiles",
-    iconUrl: `${appUrl}/MonadTiles.jpg`,
+    iconUrl: `${appUrl}/logo.png`,
     homeUrl: `${appUrl}`,
     imageUrl: `${appUrl}/MonadTiles.jpg`,
     screenshotUrls: [`${appUrl}/MonadTiles.jpg`],
