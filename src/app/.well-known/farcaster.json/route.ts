@@ -17,7 +17,7 @@ const farcasterConfig = {
     homeUrl: `${appUrl}`,
     imageUrl: `${appUrl}/MonadTiles.jpg`,
     screenshotUrls: [`${appUrl}/MonadTiles.jpg`],
-    tags: ["monad", "farcaster", "miniapp", "game"],
+    tags: ["monad", "farcaster", "miniapp", "game","tiles","piano","novee","papayou"],
     primaryCategory: "games",
     buttonTitle: "Play Monad Tiles",
     splashImageUrl: `${appUrl}/MonadTiles.jpg`,
