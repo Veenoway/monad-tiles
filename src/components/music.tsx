@@ -25,9 +25,9 @@ interface Tile {
 const melody: string[] = [];
 
 const bgs: string[] = [
+  "/background/3.jpg",
   "/background/1.jpg",
   "/background/2.jpg",
-  "/background/3.jpg",
   "/background/4.jpg",
 ];
 
