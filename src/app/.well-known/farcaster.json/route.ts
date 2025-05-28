@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const appUrl = "https://monadtiles.xyz";
+const appUrl = process.env.NEXT_PUBLIC_URL || "https://monadtiles.xyz";
 
 const farcasterConfig = {
   accountAssociation: {
@@ -16,15 +16,23 @@ const farcasterConfig = {
     iconUrl: `${appUrl}/logo.png`,
     homeUrl: `${appUrl}`,
     imageUrl: `${appUrl}/MonadTiles.jpg`,
-    screenshotUrls: [`${appUrl}/MonadTiles.jpg`],
+    screenshotUrls: [`${appUrl}/MonadTiles.jpg`, `${appUrl}/screenshot2.jpg`],
     tags: ["monad", "farcaster", "miniapp", "game", "tiles"],
     primaryCategory: "games",
     buttonTitle: "Play Monad Tiles",
     splashImageUrl: `${appUrl}/logo/new-logo.png`,
     splashBackgroundColor: "#190e59",
+    disableNativeGestures: true,
+    allowFullscreen: true,
   },
 };
 
 export async function GET() {
-  return NextResponse.json(farcasterConfig);
+  return NextResponse.json(farcasterConfig, {
+    headers: {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+    },
+  });
 }

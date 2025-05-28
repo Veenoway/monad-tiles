@@ -7,26 +7,40 @@ export const Home = () => {
   const { actions, isSDKLoaded } = useFrame();
   const [isGameLoaded, setIsGameLoaded] = useState(false);
 
+  // Gérer le chargement initial
   useEffect(() => {
-    if (isSDKLoaded && actions && isGameLoaded) {
-      console.log("Calling ready() with disableNativeGestures");
-      actions.ready({ disableNativeGestures: true }).catch(console.error);
-    }
-  }, [isSDKLoaded, actions, isGameLoaded]);
+    const loadGame = async () => {
+      try {
+        // Attendre que le SDK soit chargé
+        if (!isSDKLoaded || !actions) return;
 
-  // Marquer le jeu comme chargé après un court délai
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      console.log("Game is loaded");
-      setIsGameLoaded(true);
-    }, 2000); // Attendre 2 secondes pour s'assurer que tout est chargé
+        console.log("SDK loaded, waiting for game to be ready...");
 
-    return () => clearTimeout(timer);
-  }, []);
+        // Attendre que le jeu soit chargé
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+
+        console.log("Game is loaded, calling ready()");
+
+        // Appeler ready() avec les options appropriées
+        await actions.ready({
+          disableNativeGestures: true,
+          // Désactiver les gestes natifs pour éviter les conflits
+          // avec les interactions du jeu
+        });
+
+        console.log("ready() called successfully");
+        setIsGameLoaded(true);
+      } catch (error) {
+        console.error("Error during initialization:", error);
+      }
+    };
+
+    loadGame();
+  }, [isSDKLoaded, actions]);
 
   return (
     <main
-      className="w-screen  min-h-screen pb-[100px] font-montserrat"
+      className="w-screen min-h-screen pb-[100px] font-montserrat"
       style={{
         background: "url('/background/bg-site.jpg')",
         backgroundSize: "cover",
