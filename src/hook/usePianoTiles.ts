@@ -148,17 +148,26 @@ export function usePianoRelay(): UsePianoRelayReturn {
   );
 
   const handleGasPayment = useCallback(async () => {
-    if (!address) return false;
+    if (!address) {
+      console.log("❌ No address found for payment");
+      return false;
+    }
 
     try {
-      console.log("💸 Paying gas fees...");
+      console.log("💸 Initiating gas fee payment...");
       const tx = await payGasFees({
         address: PIANO_CONTRACT_ADDRESS,
         abi: PIANO_CONTRACT_ABI,
         functionName: "payGasFees",
         value: parseEther(PAYMENT_AMOUNT),
       });
-      console.log("✅ Gas fees paid:", tx);
+
+      if (!tx) {
+        console.error("❌ Transaction failed");
+        return false;
+      }
+
+      console.log("✅ Gas fees paid successfully:", tx);
       setGameCount(0);
       return true;
     } catch (error) {
@@ -168,9 +177,13 @@ export function usePianoRelay(): UsePianoRelayReturn {
   }, [address, payGasFees]);
 
   const checkAndPayGasFees = useCallback(async () => {
-    if (!address) return false;
+    if (!address) {
+      console.log("❌ No address found");
+      return false;
+    }
 
     try {
+      // Vérifier si un paiement est nécessaire
       if (gameCount >= GAMES_BEFORE_PAYMENT - 1) {
         console.log("💸 Payment required: 0.1 MON");
         const success = await handleGasPayment();
@@ -179,7 +192,11 @@ export function usePianoRelay(): UsePianoRelayReturn {
           return false;
         }
         console.log("✅ Payment successful");
+        return true;
       }
+
+      // Si pas de paiement nécessaire, on peut jouer
+      console.log("✅ No payment needed, can play");
       return true;
     } catch (error) {
       console.error("❌ Error in checkAndPayGasFees:", error);
@@ -221,8 +238,6 @@ export function usePianoRelay(): UsePianoRelayReturn {
     [address, refetchLeaderboard, refetchGlobalCount]
   );
 
-  console.log("leaderboard", leaderboardData);
-
   const canGoToNextPage = currentPage < totalPages - 1;
   const canGoToPreviousPage = currentPage > 0;
 
@@ -241,6 +256,8 @@ export function usePianoRelay(): UsePianoRelayReturn {
   const leaderboardFormatted = useMemo(() => {
     if (!leaderboardData || !Array.isArray(leaderboardData[0]))
       return undefined;
+
+    console.log("leaderboardData", leaderboardData);
 
     const addresses = leaderboardData[0];
     const scores = leaderboardData[1];

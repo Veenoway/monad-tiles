@@ -132,7 +132,6 @@ const PianoTilesGame: React.FC = () => {
   const computedInitialSpeed =
     (containerHeight + rowHeight) / (2000 / updateInterval);
 
-  const baselineTileSpeedRef = useRef<number>(computedInitialSpeed);
   const baselineSpawnIntervalRef = useRef<number>(600);
 
   const gap = 60;
@@ -178,7 +177,7 @@ const PianoTilesGame: React.FC = () => {
 
   const [clickedTile, setClickedTile] = useState<Tile | null>(null);
 
-  const [isSubmittingScore, setIsSubmittingScore] = useState<boolean>(false);
+  const [isSubmittingScore] = useState<boolean>(false);
 
   const [gameStarted, setGameStarted] = useState(false);
 
@@ -867,14 +866,8 @@ const PianoTilesGame: React.FC = () => {
   const renderGameOver = () => {
     return (
       <div className="absolute z-50 inset-0 flex flex-col items-center pt-[60px] bg-[rgba(11,4,51,0.9)]">
-        <Image
-          src="/game/lost.png"
-          alt="lose message"
-          width={300}
-          height={120}
-          unoptimized
-        />
-        <div className="flex justify-center gap-10 items-center mt-[80px] mb-[50px] relative">
+        <img src="/game/lost.png" alt="lose message" width={300} height={100} />
+        <div className="flex justify-center gap-10 items-center mt-[60px] mb-[50px] relative">
           <div className="flex flex-col items-center">
             <p className="text-xl text-white mb-0 leading-[18px] uppercase">
               Your score
@@ -895,7 +888,7 @@ const PianoTilesGame: React.FC = () => {
           )}
         </div>
 
-        <div className="flex items-center gap-5 mt-[60px]">
+        <div className="flex items-center gap-5 mt-[30px]">
           <button
             onClick={() => setShowSettings(true)}
             className="px-3 py-1.5 bg-[#a1055c] text-3xl h-[50px] uppercase text-white rounded-md"
@@ -903,22 +896,32 @@ const PianoTilesGame: React.FC = () => {
           >
             <IoSettingsSharp />
           </button>
+          <div className="flex flex-col items-center gap-5">
+            <button
+              onClick={startGame}
+              className={`font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out `}
+            >
+              REPLAY
+            </button>
+            <button
+              className="px-3 py-1.5 bg-[#a1055c] text-4xl h-[50px] uppercase text-white rounded-md"
+              onClick={() =>
+                actions?.composeCast({
+                  text: `I just scored ${score} points in Monad Tiles!`,
+                  embeds: [`https://monadtiles.xyz`],
+                })
+              }
+            >
+              CAST
+            </button>{" "}
+          </div>
           <button
-            onClick={startGame}
-            className={`font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out `}
+            onClick={() => {
+              setShowLeaderboard(true);
+            }}
+            className="px-3 py-1.5 bg-[#a1055c] text-4xl uppercase text-white rounded-md"
           >
-            REPLAY
-          </button>
-          <button
-            className="px-3 py-1.5 bg-[#a1055c] text-4xl h-[50px] uppercase text-white rounded-md"
-            onClick={() =>
-              actions?.composeCast({
-                text: `I just scored ${score} points in Monad Tiles!`,
-                embeds: [`https://monadtiles.xyz`],
-              })
-            }
-          >
-            Cast
+            <FaRankingStar />
           </button>
         </div>
       </div>

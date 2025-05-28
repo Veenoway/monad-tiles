@@ -42,7 +42,7 @@ const Leaderboard: React.FC = () => {
               <div>
                 <p className="font-medium">{player.address}</p>
                 <p className="text-sm text-gray-400">
-                  Meilleur score: {formatEther(player.bestScore)}
+                  Best score: {formatEther(player.bestScore)}
                 </p>
               </div>
             </div>
