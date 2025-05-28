@@ -116,8 +116,14 @@ type LeaderboardEntry = [string, number, number];
 const PianoTilesGame: React.FC = () => {
   const { setIsOpen } = useModalStore();
   const { address } = useAccount();
-  const { userRank, currentGlobalCount, leaderboardFormatted, click } =
-    usePianoRelay();
+  const {
+    userRank,
+    currentGlobalCount,
+    leaderboardFormatted,
+    click,
+    submitScore,
+    checkAndPayGasFees,
+  } = usePianoRelay();
 
   const containerHeight = 600;
   const rowHeight = 150;
@@ -166,7 +172,6 @@ const PianoTilesGame: React.FC = () => {
   const bonusBgIndexRef = useRef<number>(0);
   const normalTileCountRef = useRef<number>(0);
   const totalTileCountRef = useRef<number>(0);
-  const bonusSongIndexRef = useRef<number>(0);
 
   const specialBonusSoundPath = "/sound/bonus.mp3";
   const specialBonusAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -174,6 +179,8 @@ const PianoTilesGame: React.FC = () => {
   const [clickedTile, setClickedTile] = useState<Tile | null>(null);
 
   const [isSubmittingScore, setIsSubmittingScore] = useState<boolean>(false);
+
+  const [gameStarted, setGameStarted] = useState(false);
 
   useEffect(() => {
     // audioRef.current = new Audio("/bloop-1.mp3");
@@ -419,81 +426,39 @@ const PianoTilesGame: React.FC = () => {
     }, 1000);
   };
 
-  const startGame = async () => {
-    setTxCount(0);
-
-    stopAllSounds();
-
-    if (gameOverBgMusicRef.current) {
-      gameOverBgMusicRef.current.pause();
-      gameOverBgMusicRef.current.currentTime = 0;
-      gameOverBgMusicRef.current = null;
+  const startGame = useCallback(async () => {
+    try {
+      const canPlay = await checkAndPayGasFees();
+      if (!canPlay) {
+        alert("Please pay gas fees to continue playing");
+        return;
+      }
+      setGameStarted(true);
+      setIsPlaying(true);
+      setScore(0);
+      setLives(10);
+      setGameOver(false);
+      setRows([]);
+      setTileSpeed(computedInitialSpeed);
+      setSpawnInterval(600);
+    } catch (error) {
+      console.error("Error starting game:", error);
+      alert("Failed to start game");
     }
+  }, [checkAndPayGasFees, computedInitialSpeed]);
 
-    if (animTimerRef.current) clearInterval(animTimerRef.current);
-    if (accelTimerRef.current) clearInterval(accelTimerRef.current);
-    setRows([]);
-    setScore(0);
-    setLives(10);
-    setGameOver(false);
-    setTileSpeed(baselineTileSpeedRef.current);
-    setSpawnInterval(baselineSpawnIntervalRef.current);
-    spawnIndexRef.current = 0;
-    bgIndexRef.current = 0;
-    bonusBgIndexRef.current = 0;
-    normalTileCountRef.current = 0;
-    totalTileCountRef.current = 0;
-    bonusSongIndexRef.current = 0;
-    setClickedTile(null);
-    setIsPlaying(true);
-  };
-
-  const endGame = useCallback(() => {
-    const finalScore = score;
-    console.log("Game over with score:", finalScore);
-
+  const handleGameOver = useCallback(async () => {
     setIsPlaying(false);
-    setGameOver(true);
-
-    if (animTimerRef.current) clearInterval(animTimerRef.current);
-    if (accelTimerRef.current) clearInterval(accelTimerRef.current);
-    if (bonusTimerRef.current) {
-      clearTimeout(bonusTimerRef.current);
-      bonusTimerRef.current = null;
-    }
-
-    setScoreMultiplier(1);
-    setCurrentBonusImage("");
-
-    // Indiquer que la soumission du score commence
-    setIsSubmittingScore(true);
-
-    // Soumettre le score immédiatement sans délai
-    const relayerIndex = Math.floor(Math.random() * 3);
-
-    fetch("/api/relay", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Cache-Control": "no-cache", // Éviter la mise en cache
-      },
-      body: JSON.stringify({
-        playerAddress: address,
-        action: "submitScore",
-        score: finalScore,
-        relayerIndex: relayerIndex,
-      }),
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("Score submitted:", data);
-        setIsSubmittingScore(false);
-      })
-      .catch((error) => {
+    if (score > 0) {
+      try {
+        await submitScore(score);
+        alert(`Score submitted: ${score}`);
+      } catch (error) {
         console.error("Error submitting score:", error);
-        setIsSubmittingScore(false);
-      });
-  }, [score, address]);
+        alert("Failed to submit score");
+      }
+    }
+  }, [score, submitScore]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -529,7 +494,7 @@ const PianoTilesGame: React.FC = () => {
               if (animTimerRef.current) {
                 clearInterval(animTimerRef.current);
               }
-              endGame();
+              handleGameOver();
             }, 100);
 
             return updatedRows;
@@ -547,7 +512,7 @@ const PianoTilesGame: React.FC = () => {
         clearInterval(animTimerRef.current);
       }
     };
-  }, [isPlaying, tileSpeed, containerHeight, lives, endGame]);
+  }, [isPlaying, tileSpeed, containerHeight, lives, handleGameOver]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -597,10 +562,8 @@ const PianoTilesGame: React.FC = () => {
 
       setTxCount((prev) => prev + count);
 
-      // Distribuer les transactions entre tous les relayers
       Array.from({ length: count }).forEach((_, index) => {
-        // Utiliser un index différent pour chaque transaction
-        const relayerIndex = index % 6; // Utiliser les 6 relayers en rotation
+        const relayerIndex = index % 6;
 
         fetch("/api/relay", {
           method: "POST",
@@ -657,7 +620,7 @@ const PianoTilesGame: React.FC = () => {
           setSpawnInterval((prev) => prev / 0.9);
           setCurrentBonusImage("/bonus/bonus-fin-2.png");
           addFeedback("Slower!", "#00FF00");
-          txCount = 4;
+          txCount = 1;
         }
         handleClicks();
       } else if (clickedTile.isBonus) {
@@ -670,13 +633,13 @@ const PianoTilesGame: React.FC = () => {
             addFeedback("+1 Life", "#00FF00");
           }
         }
-        txCount = 4;
+        txCount = 1;
       } else {
         if (audioRef.current) {
           audioRef.current.currentTime = 0;
           audioRef.current.play();
         }
-        txCount = 2;
+        txCount = 1;
       }
       txCount *= scoreMultiplier;
       console.log("txCount", txCount);
@@ -973,7 +936,7 @@ const PianoTilesGame: React.FC = () => {
     >
       {showSettings && renderSettings()}
       {showLeaderboard && renderLeaderboard()}
-      {!isPlaying && !gameOver && (
+      {!gameStarted && (
         <div className="absolute z-50 inset-0 py-10 flex flex-col items-center bg-[url('/bg/main-bg.jpg')] bg-no-repeat bg-bottom">
           <Image src="/logo/new-logo.png" alt="logo" width={300} height={120} />
           <div className="flex items-center gap-10 mt-[90px]">

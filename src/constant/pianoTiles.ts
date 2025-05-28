@@ -1,5 +1,5 @@
 export const PIANO_CONTRACT_ADDRESS =
-  "0xcd9479b8C4959A476C6e361a5213C165E9236A1C";
+  "0xC7e1368B532f09ab829A509686103FFdA7bDa554";
 
 export const PIANO_CONTRACT_ABI = [
   {
@@ -18,6 +18,13 @@ export const PIANO_CONTRACT_ABI = [
       },
     ],
     anonymous: false,
+  },
+  {
+    inputs: [],
+    name: "payGameFee",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
   },
   {
     type: "event",

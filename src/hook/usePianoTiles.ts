@@ -3,7 +3,8 @@ import {
   PIANO_CONTRACT_ADDRESS,
 } from "@/constant/pianoTiles";
 import { useCallback, useMemo, useState } from "react";
-import { useAccount, useReadContract } from "wagmi";
+import { parseEther } from "viem";
+import { useAccount, useReadContract, useWriteContract } from "wagmi";
 
 type PlayerStats = {
   address: string;
@@ -32,12 +33,20 @@ type UsePianoRelayReturn = {
   canGoToNextPage: boolean;
   canGoToPreviousPage: boolean;
   leaderboardFormatted: LeaderboardEntry[] | undefined;
+  gameCount: number;
+  gamesUntilPayment: number;
+  checkAndPayGasFees: () => Promise<boolean>;
 };
 
 export function usePianoRelay(): UsePianoRelayReturn {
   const { address } = useAccount();
   const [currentPage, setCurrentPage] = useState(0);
   const pageSize = 10;
+  const [gameCount, setGameCount] = useState(0);
+  const GAMES_BEFORE_PAYMENT = 10;
+  const PAYMENT_AMOUNT = "0.1";
+
+  const { writeContractAsync: payGasFees } = useWriteContract();
 
   const { data: totalPlayers } = useReadContract({
     address: PIANO_CONTRACT_ADDRESS,
@@ -138,6 +147,46 @@ export function usePianoRelay(): UsePianoRelayReturn {
     [refetchLeaderboard]
   );
 
+  const handleGasPayment = useCallback(async () => {
+    if (!address) return false;
+
+    try {
+      console.log("💸 Paying gas fees...");
+      const tx = await payGasFees({
+        address: PIANO_CONTRACT_ADDRESS,
+        abi: PIANO_CONTRACT_ABI,
+        functionName: "payGasFees",
+        value: parseEther(PAYMENT_AMOUNT),
+      });
+      console.log("✅ Gas fees paid:", tx);
+      setGameCount(0);
+      return true;
+    } catch (error) {
+      console.error("❌ Error paying gas fees:", error);
+      return false;
+    }
+  }, [address, payGasFees]);
+
+  const checkAndPayGasFees = useCallback(async () => {
+    if (!address) return false;
+
+    try {
+      if (gameCount >= GAMES_BEFORE_PAYMENT - 1) {
+        console.log("💸 Payment required: 0.1 MON");
+        const success = await handleGasPayment();
+        if (!success) {
+          console.error("❌ Payment failed");
+          return false;
+        }
+        console.log("✅ Payment successful");
+      }
+      return true;
+    } catch (error) {
+      console.error("❌ Error in checkAndPayGasFees:", error);
+      return false;
+    }
+  }, [address, gameCount, handleGasPayment]);
+
   const submitScore = useCallback(
     async (score: number) => {
       if (!address) return;
@@ -158,6 +207,7 @@ export function usePianoRelay(): UsePianoRelayReturn {
           throw new Error(data.error || "Transaction failed");
         }
         setTxHashes((prev) => [...prev, data.txHash]);
+        setGameCount((prev) => prev + 1);
 
         await refetchLeaderboard();
         await refetchGlobalCount();
@@ -225,5 +275,8 @@ export function usePianoRelay(): UsePianoRelayReturn {
     canGoToNextPage,
     canGoToPreviousPage,
     leaderboardFormatted,
+    gameCount,
+    gamesUntilPayment: GAMES_BEFORE_PAYMENT - gameCount,
+    checkAndPayGasFees,
   };
 }

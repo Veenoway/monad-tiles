@@ -1,4 +1,5 @@
 "use client";
+import { GasPaymentInfo } from "@/components/gas-payment-info";
 import PianoTilesGame from "@/components/music";
 import { useFrame } from "@/lib/farcaster/provider";
 import { useEffect } from "react";
@@ -37,6 +38,7 @@ export const Home = () => {
         <div className="w-full mx-auto">
           <PianoTilesGame />
         </div>
+        <GasPaymentInfo />
         {/* <div className="flex lg:hidden items-center justify-center mt-5">
           <WalletConnection />
         </div>{" "} */}
