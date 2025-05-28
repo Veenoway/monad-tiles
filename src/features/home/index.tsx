@@ -1,8 +1,19 @@
 "use client";
 import { FarcasterRedirect } from "@/components/farcaster-redirect";
 import PianoTilesGame from "@/components/music";
+import { useFrame } from "@/lib/farcaster/provider";
+import { useEffect } from "react";
 
 export const Home = () => {
+  const { actions, isSDKLoaded } = useFrame();
+
+  useEffect(() => {
+    if (isSDKLoaded && actions) {
+      // Appeler ready() quand le contenu est chargé
+      actions.ready().catch(console.error);
+    }
+  }, [isSDKLoaded, actions]);
+
   return (
     <main
       className="w-screen  min-h-screen pb-[100px] font-montserrat"
