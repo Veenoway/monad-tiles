@@ -1,14 +1,27 @@
 "use client";
 
-import { useMiniAppContext } from "@/hook/useMiniApp";
 import { useFrame } from "@/lib/farcaster/provider";
+import { useEffect, useState } from "react";
 
 export function FarcasterRedirect() {
   const { context, isSDKLoaded } = useFrame();
-  const { context: miniAppContext } = useMiniAppContext();
+  const [isWarpcast, setIsWarpcast] = useState(false);
 
-  // Si le contexte est déjà défini ou si le SDK n'est pas chargé, ne rien afficher
-  if (context || !isSDKLoaded) {
+  useEffect(() => {
+    // Vérifier si nous sommes dans Warpcast
+    const checkWarpcast = () => {
+      const isInWarpcast =
+        window.location.href.includes("warpcast.com") ||
+        window.location.href.includes("warpcast.app") ||
+        window.navigator.userAgent.includes("Warpcast");
+      setIsWarpcast(isInWarpcast);
+    };
+
+    checkWarpcast();
+  }, []);
+
+  // Si nous sommes dans Warpcast ou si le SDK est chargé, ne rien afficher
+  if (isWarpcast || context || !isSDKLoaded) {
     return null;
   }
 
