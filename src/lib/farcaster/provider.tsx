@@ -97,16 +97,9 @@ export function FrameProvider({ children }: FrameProviderProps) {
         await initPromise;
         clearTimeout(timeoutId);
 
-        // Initialiser les actions
+        // Marquer le SDK comme chargé sans appeler ready()
         if (mounted) {
-          try {
-            await sdk.actions.ready();
-            console.log("SDK actions ready");
-            setIsSDKLoaded(true);
-          } catch (actionError) {
-            console.error("Error initializing SDK actions:", actionError);
-            throw actionError;
-          }
+          setIsSDKLoaded(true);
         }
       } catch (err) {
         console.error("SDK initialization error:", err);
