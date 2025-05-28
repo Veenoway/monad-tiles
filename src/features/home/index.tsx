@@ -1,4 +1,5 @@
 "use client";
+import { FarcasterRedirect } from "@/components/farcaster-redirect";
 import PianoTilesGame from "@/components/music";
 
 export const Home = () => {
@@ -12,6 +13,7 @@ export const Home = () => {
         fontFamily: "Boogaloo",
       }}
     >
+      <FarcasterRedirect />
       <div className="w-full sm:w-[95%] mx-auto lg:pt-10 gap-8">
         {/* <div className="absolute right-5 top-5 hidden lg:flex">
           <WalletConnection />
