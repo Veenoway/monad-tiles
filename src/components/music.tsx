@@ -489,13 +489,17 @@ const PianoTilesGame: React.FC = () => {
     }
 
     try {
-      console.log("Checking gas fees before starting game...");
+      console.log("🔍 Checking gas fees before starting game...");
       const canPlay = await checkAndPayGasFees();
+      console.log("💸 Can play:", canPlay);
+
       if (!canPlay) {
+        console.log("💰 Payment required, showing modal");
         setShowPaymentModal(true);
         return;
       }
-      console.log("Gas fees paid, starting game...");
+
+      console.log("🎮 Starting game...");
       setGameStarted(true);
       setIsPlaying(true);
       setScore(0);
@@ -505,7 +509,7 @@ const PianoTilesGame: React.FC = () => {
       setTileSpeed(computedInitialSpeed);
       setSpawnInterval(600);
     } catch (error) {
-      console.error("Error starting game:", error);
+      console.error("❌ Error starting game:", error);
       showNotification("Failed to start game. Please try again.", "error");
     }
   }, [

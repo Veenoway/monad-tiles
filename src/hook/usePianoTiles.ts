@@ -114,7 +114,10 @@ export function usePianoRelay(): UsePianoRelayReturn {
   });
 
   const checkPaymentStatus = useCallback(async () => {
-    if (!hasPaidFees) return false;
+    if (!hasPaidFees) {
+      console.log("❌ No payment status found");
+      return false;
+    }
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const [_, __, ___, hasPaid] = hasPaidFees as [
       bigint,
@@ -122,6 +125,7 @@ export function usePianoRelay(): UsePianoRelayReturn {
       bigint,
       boolean
     ];
+    console.log("💸 Payment status:", hasPaid);
     return hasPaid;
   }, [hasPaidFees]);
 
