@@ -1,4 +1,5 @@
 "use client";
+import { FarcasterActions } from "@/components/actions";
 import PianoTilesGame from "@/components/music";
 import { useFrame } from "@/lib/farcaster/provider";
 import { useEffect } from "react";
@@ -32,7 +33,7 @@ export const Home = () => {
         {/* <div className="flex lg:hidden items-center justify-center mt-5">
           <WalletConnection />
         </div>{" "} */}
-        {/* <FarcasterActions /> */}
+        <FarcasterActions />
       </div>
     </main>
   );
