@@ -53,37 +53,37 @@ export function FrameProvider({ children }: FrameProviderProps) {
       if (!mounted) return;
 
       try {
-        console.log(
-          "Initializing Farcaster SDK... (Attempt",
+        console.warn(
+          "🔄 Initializing Farcaster SDK... (Attempt",
           retryCount + 1,
           "of",
           MAX_RETRIES,
           ")"
         );
-        console.log("Current URL:", window.location.href);
-        console.log("User Agent:", window.navigator.userAgent);
+        console.warn("🌐 Current URL:", window.location.href);
+        console.warn("👤 User Agent:", window.navigator.userAgent);
 
         // Vérifier si le SDK est disponible
         if (!sdk) {
-          console.error("Farcaster SDK not available");
+          console.error("❌ Farcaster SDK not available");
           throw new Error("Farcaster SDK not available");
         }
 
-        console.log("SDK is available, attempting to get context...");
+        console.warn("✅ SDK is available, attempting to get context...");
 
         // Initialiser le SDK avec un timeout
         const initPromise = new Promise<void>((resolve, reject) => {
           timeoutId = setTimeout(() => {
-            console.error("SDK initialization timeout");
+            console.error("⏰ SDK initialization timeout");
             reject(new Error("SDK initialization timeout"));
-          }, 10000); // Augmenté à 10 secondes
+          }, 5000);
 
           // Essayer d'obtenir le contexte
           sdk.context
             .then((ctx) => {
-              console.log("SDK context received:", ctx);
+              console.warn("📦 SDK context received:", ctx);
               if (!ctx) {
-                console.error("No context available");
+                console.error("❌ No context available");
                 reject(new Error("No context available"));
                 return;
               }
@@ -91,17 +91,17 @@ export function FrameProvider({ children }: FrameProviderProps) {
                 setContext(ctx as FrameContext);
                 setActions(sdk.actions);
                 setIsEthProviderAvailable(!!sdk.wallet.ethProvider);
-                console.log("SDK context set successfully");
-                console.log("Actions available:", !!sdk.actions);
-                console.log(
-                  "ETH Provider available:",
+                console.warn("✅ SDK context set successfully");
+                console.warn("🔧 Actions available:", !!sdk.actions);
+                console.warn(
+                  "💰 ETH Provider available:",
                   !!sdk.wallet.ethProvider
                 );
               }
               resolve();
             })
             .catch((err) => {
-              console.error("Error getting SDK context:", err);
+              console.error("❌ Error getting SDK context:", err);
               reject(err);
             });
         });
@@ -111,14 +111,14 @@ export function FrameProvider({ children }: FrameProviderProps) {
 
         // Marquer le SDK comme chargé
         if (mounted) {
-          console.log("SDK initialization complete");
+          console.warn("✨ SDK initialization complete");
           setIsSDKLoaded(true);
         }
       } catch (err) {
-        console.error("SDK initialization error:", err);
+        console.error("❌ SDK initialization error:", err);
         if (mounted) {
           if (retryCount < MAX_RETRIES - 1) {
-            console.log("Retrying SDK initialization...");
+            console.warn("🔄 Retrying SDK initialization...");
             setRetryCount((prev) => prev + 1);
             // Attendre 1 seconde avant de réessayer
             await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -135,7 +135,7 @@ export function FrameProvider({ children }: FrameProviderProps) {
 
     // Démarrer l'initialisation
     if (!isSDKLoaded) {
-      console.log("Starting SDK initialization...");
+      console.warn("🚀 Starting SDK initialization...");
       initializeSDK();
     }
 

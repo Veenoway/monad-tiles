@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-const appUrl = process.env.NEXT_PUBLIC_URL || "https://monadtiles.xyz";
+const appUrl = process.env.NEXT_PUBLIC_URL || "https://monadtiles.xyz/";
 
 const farcasterConfig = {
   accountAssociation: {
@@ -11,7 +11,7 @@ const farcasterConfig = {
       "MHgyZmNkMzdkZGM4MjhhNDQ1ZmRjMTMwZTRjY2UyNTEyNjZiYTllY2VlMjBkMDA3ODE0NDBjMTBhNTQwNTdhMzY5MWI5MTZhOWQ3M2I5MmFjYzI4NDJiNDM1ZGEwNjVmZjViMDVlYjU0ODE1NzgzZjAxNzE1MmYxOWY3NjI2NmFlMzFj",
   },
   frame: {
-    version: "1",
+    version: "1.1",
     name: "Monad Tiles",
     iconUrl: `${appUrl}/logo.png`,
     homeUrl: `${appUrl}`,
