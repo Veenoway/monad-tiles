@@ -8,7 +8,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FaRankingStar } from "react-icons/fa6";
 import { GoMute, GoUnmute } from "react-icons/go";
 import { IoSettingsSharp } from "react-icons/io5";
-import { useAccount, useConnect } from "wagmi";
+import { monadTestnet } from "viem/chains";
+import { useAccount, useConnect, useSwitchChain } from "wagmi";
 
 interface Tile {
   id: number;
@@ -114,8 +115,9 @@ const gameOverSound: string = "/sound/haha.mp3";
 type LeaderboardEntry = [string, number, number];
 
 const PianoTilesGame: React.FC = () => {
-  const { address, isConnected } = useAccount();
+  const { address, isConnected, chainId } = useAccount();
   const { connect, connectors } = useConnect();
+  const { switchChain } = useSwitchChain();
   const { actions, isEthProviderAvailable } = useMiniAppContext();
   const {
     userRank,
@@ -132,6 +134,13 @@ const PianoTilesGame: React.FC = () => {
     (window.location.href.includes("warpcast.com") ||
       window.location.href.includes("warpcast.app") ||
       window.navigator.userAgent.includes("Warpcast"));
+
+  // Changer automatiquement vers Monad Testnet si nécessaire
+  useEffect(() => {
+    if (isConnected && chainId !== monadTestnet.id) {
+      switchChain({ chainId: monadTestnet.id });
+    }
+  }, [isConnected, chainId, switchChain]);
 
   console.log("🌐 Environment:", isInWarpcast ? "Warpcast" : "Web");
   console.log(
@@ -498,8 +507,11 @@ const PianoTilesGame: React.FC = () => {
 
   const startGame = useCallback(async () => {
     if (!isConnected) {
-      const connector = farcasterFrame();
-      connect({ connector });
+      if (isEthProviderAvailable) {
+        connect({ connector: farcasterFrame() });
+      } else {
+        showNotification("Wallet connection only via Warpcast", "error");
+      }
       return;
     }
 
@@ -535,6 +547,7 @@ const PianoTilesGame: React.FC = () => {
     isConnected,
     connect,
     isInWarpcast,
+    isEthProviderAvailable,
   ]);
 
   useEffect(() => {

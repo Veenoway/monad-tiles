@@ -208,6 +208,7 @@ export function usePianoRelay(): UsePianoRelayReturn {
           abi: PIANO_CONTRACT_ABI,
           functionName: "payGameFee",
           value: parseEther(PAYMENT_AMOUNT),
+          chainId: monadTestnet.id,
         });
       }
 
