@@ -512,7 +512,6 @@ const PianoTilesGame: React.FC = () => {
       if (!canPlay) {
         console.log("💰 Payment required, showing modal");
         setShowPaymentModal(true);
-        return;
       }
 
       console.log("🎮 Starting game...");
@@ -854,18 +853,12 @@ const PianoTilesGame: React.FC = () => {
                   <th className="px-4 py-2 font-thin text-white">Rank</th>
                   <th className="px-4 py-2 font-thin text-white">Address</th>
                   <th className="px-4 py-2 font-thin text-white">Score</th>
-                  <th className="px-4 py-2 font-thin text-white text-end">
-                    Txn
-                  </th>
                 </tr>
               </thead>
               <tbody>
                 {leaderboardFormatted && leaderboardFormatted.length > 0 ? (
                   leaderboardFormatted.map(
-                    (
-                      [userAddress, score, tx]: LeaderboardEntry,
-                      index: number
-                    ) => (
+                    ([userAddress, score]: LeaderboardEntry, index: number) => (
                       <tr
                         key={index}
                         className={`border-b border-white/10 text-lg ${
@@ -886,9 +879,6 @@ const PianoTilesGame: React.FC = () => {
                         </td>
                         <td className="px-4 py-1.5  font-bold  text-white">
                           {score}
-                        </td>
-                        <td className="px-4 py-1.5 text-end  text-white">
-                          {tx}
                         </td>
                       </tr>
                     )

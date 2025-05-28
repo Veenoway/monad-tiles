@@ -182,12 +182,33 @@ export function usePianoRelay(): UsePianoRelayReturn {
   const handleGasPayment = useCallback(async () => {
     try {
       console.log("💸 Initiating gas fee payment...");
-      const tx = await payGasFees({
-        address: PIANO_CONTRACT_ADDRESS,
-        abi: PIANO_CONTRACT_ABI,
-        functionName: "payGameFee",
-        value: parseEther(PAYMENT_AMOUNT),
-      });
+
+      // Vérifier si nous sommes sur Warpcast
+      const isInWarpcast =
+        typeof window !== "undefined" &&
+        (window.location.href.includes("warpcast.com") ||
+          window.location.href.includes("warpcast.app") ||
+          window.navigator.userAgent.includes("Warpcast"));
+
+      let tx;
+      if (isInWarpcast) {
+        // Sur Warpcast, utiliser le wallet Warpcast
+        tx = await payGasFees({
+          address: PIANO_CONTRACT_ADDRESS,
+          abi: PIANO_CONTRACT_ABI,
+          functionName: "payGameFee",
+          value: parseEther(PAYMENT_AMOUNT),
+          chainId: 10143, // Monad Testnet
+        });
+      } else {
+        // Sur le web, utiliser le wallet normal
+        tx = await payGasFees({
+          address: PIANO_CONTRACT_ADDRESS,
+          abi: PIANO_CONTRACT_ABI,
+          functionName: "payGameFee",
+          value: parseEther(PAYMENT_AMOUNT),
+        });
+      }
 
       if (!tx) {
         console.error("❌ Transaction failed");
