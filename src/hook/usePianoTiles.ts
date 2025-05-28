@@ -148,11 +148,6 @@ export function usePianoRelay(): UsePianoRelayReturn {
   );
 
   const handleGasPayment = useCallback(async () => {
-    if (!address) {
-      console.log("❌ No address found for payment");
-      return false;
-    }
-
     try {
       console.log("💸 Initiating gas fee payment...");
       const tx = await payGasFees({
@@ -177,11 +172,6 @@ export function usePianoRelay(): UsePianoRelayReturn {
   }, [address, payGasFees]);
 
   const checkAndPayGasFees = useCallback(async () => {
-    if (!address) {
-      console.log("❌ No address found");
-      return false;
-    }
-
     try {
       // Vérifier si un paiement est nécessaire
       if (gameCount >= GAMES_BEFORE_PAYMENT - 1) {
@@ -206,7 +196,6 @@ export function usePianoRelay(): UsePianoRelayReturn {
 
   const submitScore = useCallback(
     async (score: number) => {
-      if (!address) return;
       setIsLoading(true);
       setError(null);
       try {
