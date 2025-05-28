@@ -60,23 +60,30 @@ export function FrameProvider({ children }: FrameProviderProps) {
           MAX_RETRIES,
           ")"
         );
+        console.log("Current URL:", window.location.href);
+        console.log("User Agent:", window.navigator.userAgent);
 
         // Vérifier si le SDK est disponible
         if (!sdk) {
+          console.error("Farcaster SDK not available");
           throw new Error("Farcaster SDK not available");
         }
 
+        console.log("SDK is available, attempting to get context...");
+
         // Initialiser le SDK avec un timeout
         const initPromise = new Promise<void>((resolve, reject) => {
-          timeoutId = setTimeout(
-            () => reject(new Error("SDK initialization timeout")),
-            5000
-          );
+          timeoutId = setTimeout(() => {
+            console.error("SDK initialization timeout");
+            reject(new Error("SDK initialization timeout"));
+          }, 10000); // Augmenté à 10 secondes
 
           // Essayer d'obtenir le contexte
           sdk.context
             .then((ctx) => {
+              console.log("SDK context received:", ctx);
               if (!ctx) {
+                console.error("No context available");
                 reject(new Error("No context available"));
                 return;
               }
@@ -84,7 +91,12 @@ export function FrameProvider({ children }: FrameProviderProps) {
                 setContext(ctx as FrameContext);
                 setActions(sdk.actions);
                 setIsEthProviderAvailable(!!sdk.wallet.ethProvider);
-                console.log("SDK context received:", ctx);
+                console.log("SDK context set successfully");
+                console.log("Actions available:", !!sdk.actions);
+                console.log(
+                  "ETH Provider available:",
+                  !!sdk.wallet.ethProvider
+                );
               }
               resolve();
             })
@@ -97,8 +109,9 @@ export function FrameProvider({ children }: FrameProviderProps) {
         await initPromise;
         clearTimeout(timeoutId);
 
-        // Marquer le SDK comme chargé sans appeler ready()
+        // Marquer le SDK comme chargé
         if (mounted) {
+          console.log("SDK initialization complete");
           setIsSDKLoaded(true);
         }
       } catch (err) {

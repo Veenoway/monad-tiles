@@ -1,41 +1,33 @@
 "use client";
 import PianoTilesGame from "@/components/music";
 import { useFrame } from "@/lib/farcaster/provider";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 export const Home = () => {
   const { actions, isSDKLoaded } = useFrame();
-  const [isGameLoaded, setIsGameLoaded] = useState(false);
 
-  // Gérer le chargement initial
   useEffect(() => {
-    const loadGame = async () => {
+    const initializeApp = async () => {
+      if (!isSDKLoaded || !actions) {
+        console.log("Waiting for SDK to load...");
+        return;
+      }
+
       try {
-        // Attendre que le SDK soit chargé
-        if (!isSDKLoaded || !actions) return;
+        console.log("SDK loaded, initializing app...");
 
-        console.log("SDK loaded, waiting for game to be ready...");
-
-        // Attendre que le jeu soit chargé
+        // Attendre que le contenu soit chargé
         await new Promise((resolve) => setTimeout(resolve, 2000));
 
-        console.log("Game is loaded, calling ready()");
-
-        // Appeler ready() avec les options appropriées
-        await actions.ready({
-          disableNativeGestures: true,
-          // Désactiver les gestes natifs pour éviter les conflits
-          // avec les interactions du jeu
-        });
-
+        console.log("Content loaded, calling ready()");
+        await actions.ready({ disableNativeGestures: true });
         console.log("ready() called successfully");
-        setIsGameLoaded(true);
       } catch (error) {
-        console.error("Error during initialization:", error);
+        console.error("Error during app initialization:", error);
       }
     };
 
-    loadGame();
+    initializeApp();
   }, [isSDKLoaded, actions]);
 
   return (
