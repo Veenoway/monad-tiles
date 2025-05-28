@@ -75,6 +75,8 @@ export function usePianoRelay(): UsePianoRelayReturn {
       refetch: () => void;
     };
 
+  console.log("Raw leaderboard data:", leaderboardData);
+
   const { data: currentGlobalCount, refetch: refetchGlobalCount } =
     useReadContract({
       address: PIANO_CONTRACT_ADDRESS,
@@ -87,6 +89,8 @@ export function usePianoRelay(): UsePianoRelayReturn {
       },
     });
 
+  console.log("Current global count:", currentGlobalCount);
+
   const { data: userRank } = useReadContract({
     address: PIANO_CONTRACT_ADDRESS,
     abi: PIANO_CONTRACT_ABI,
@@ -98,6 +102,8 @@ export function usePianoRelay(): UsePianoRelayReturn {
     },
   });
 
+  console.log("User rank:", userRank);
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [txHashes, setTxHashes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -105,6 +111,7 @@ export function usePianoRelay(): UsePianoRelayReturn {
   const formattedPlayerStats: PlayerStats[] = useMemo(() => {
     if (!leaderboardData || !Array.isArray(leaderboardData[0])) return [];
 
+    console.log("Formatting player stats from:", leaderboardData);
     return (leaderboardData[0] as string[]).map((address, index) => ({
       address,
       lastScore: (leaderboardData[1] as bigint[])[index],
@@ -246,7 +253,7 @@ export function usePianoRelay(): UsePianoRelayReturn {
     if (!leaderboardData || !Array.isArray(leaderboardData[0]))
       return undefined;
 
-    console.log("leaderboardData", leaderboardData);
+    console.log("Formatting leaderboard data:", leaderboardData);
 
     const addresses = leaderboardData[0];
     const scores = leaderboardData[1];
@@ -260,6 +267,7 @@ export function usePianoRelay(): UsePianoRelayReturn {
       });
     }
 
+    console.log("Formatted leaderboard values:", finalValues);
     return finalValues;
   }, [leaderboardData]);
 

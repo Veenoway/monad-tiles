@@ -431,11 +431,13 @@ const PianoTilesGame: React.FC = () => {
     }
 
     try {
+      console.log("Checking gas fees before starting game...");
       const canPlay = await checkAndPayGasFees();
       if (!canPlay) {
-        alert("Please pay gas fees to continue playing");
+        alert("Please pay gas fees (0.1 MON) to start playing");
         return;
       }
+      console.log("Gas fees paid, starting game...");
       setGameStarted(true);
       setIsPlaying(true);
       setScore(0);
@@ -446,7 +448,9 @@ const PianoTilesGame: React.FC = () => {
       setSpawnInterval(600);
     } catch (error) {
       console.error("Error starting game:", error);
-      alert("Failed to start game");
+      alert(
+        "Failed to start game. Please make sure you have paid the gas fees."
+      );
     }
   }, [
     checkAndPayGasFees,
@@ -460,14 +464,23 @@ const PianoTilesGame: React.FC = () => {
     setIsPlaying(false);
     if (score > 0) {
       try {
+        console.log("Submitting score:", score);
+        const canPlay = await checkAndPayGasFees();
+        if (!canPlay) {
+          alert("Please pay gas fees (0.1 MON) to submit your score");
+          return;
+        }
         await submitScore(score);
+        console.log("Score submitted successfully");
         alert(`Score submitted: ${score}`);
       } catch (error) {
         console.error("Error submitting score:", error);
-        alert("Failed to submit score");
+        alert(
+          "Failed to submit score. Please make sure you have paid the gas fees."
+        );
       }
     }
-  }, [score, submitScore]);
+  }, [score, submitScore, checkAndPayGasFees]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -767,6 +780,7 @@ const PianoTilesGame: React.FC = () => {
   };
 
   const renderLeaderboard = () => {
+    console.log("Rendering leaderboard with data:", leaderboardFormatted);
     return (
       <div className="absolute z-[11000] inset-0 bg-[rgba(11,4,51,0.95)] flex flex-col items-center justify-center p-4 overflow-y-auto">
         <h2 className="text-4xl text-white font-bold uppercase italic mb-3">
