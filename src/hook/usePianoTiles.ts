@@ -4,6 +4,7 @@ import {
 } from "@/constant/pianoTiles";
 import { useCallback, useMemo, useState } from "react";
 import { parseEther } from "viem";
+import { monadTestnet } from "viem/chains";
 import { useAccount, useReadContract, useWriteContract } from "wagmi";
 
 type PlayerStats = {
@@ -192,13 +193,13 @@ export function usePianoRelay(): UsePianoRelayReturn {
 
       let tx;
       if (isInWarpcast) {
-        // Sur Warpcast, utiliser le wallet Warpcast
+        // Sur Warpcast, utiliser le connecteur farcasterFrame
         tx = await payGasFees({
           address: PIANO_CONTRACT_ADDRESS,
           abi: PIANO_CONTRACT_ABI,
           functionName: "payGameFee",
           value: parseEther(PAYMENT_AMOUNT),
-          chainId: 10143, // Monad Testnet
+          chainId: monadTestnet.id,
         });
       } else {
         // Sur le web, utiliser le wallet normal

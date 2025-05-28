@@ -1,6 +1,7 @@
 "use client";
 import { useMiniAppContext } from "@/hook/useMiniApp";
 import { usePianoRelay } from "@/hook/usePianoTiles";
+import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -497,7 +498,8 @@ const PianoTilesGame: React.FC = () => {
 
   const startGame = useCallback(async () => {
     if (!isConnected) {
-      connect({ connector: connectors[0] });
+      const connector = farcasterFrame();
+      connect({ connector });
       return;
     }
 
@@ -532,7 +534,6 @@ const PianoTilesGame: React.FC = () => {
     computedInitialSpeed,
     isConnected,
     connect,
-    connectors,
     isInWarpcast,
   ]);
 
