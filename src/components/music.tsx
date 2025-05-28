@@ -115,6 +115,7 @@ type LeaderboardEntry = [string, number, number];
 const PianoTilesGame: React.FC = () => {
   const { address, isConnected } = useAccount();
   const { connect, connectors } = useConnect();
+  const { actions, isEthProviderAvailable } = useMiniAppContext();
   const {
     userRank,
     currentGlobalCount,
@@ -123,6 +124,19 @@ const PianoTilesGame: React.FC = () => {
     submitScore,
     checkAndPayGasFees,
   } = usePianoRelay();
+
+  // Vérifier si nous sommes dans Warpcast
+  const isInWarpcast =
+    typeof window !== "undefined" &&
+    (window.location.href.includes("warpcast.com") ||
+      window.location.href.includes("warpcast.app") ||
+      window.navigator.userAgent.includes("Warpcast"));
+
+  console.log("🌐 Environment:", isInWarpcast ? "Warpcast" : "Web");
+  console.log(
+    "💰 ETH Provider:",
+    isEthProviderAvailable ? "Available" : "Not available"
+  );
 
   const containerHeight = 600;
   const rowHeight = 150;
@@ -134,7 +148,6 @@ const PianoTilesGame: React.FC = () => {
   const baselineSpawnIntervalRef = useRef<number>(600);
 
   const gap = 60;
-  const { actions } = useMiniAppContext();
   const [rows, setRows] = useState<Tile[]>([]);
   const [score, setScore] = useState<number>(0);
   const [lives, setLives] = useState<number>(10);
@@ -490,6 +503,9 @@ const PianoTilesGame: React.FC = () => {
 
     try {
       console.log("🔍 Checking gas fees before starting game...");
+      console.log("🌐 Environment:", isInWarpcast ? "Warpcast" : "Web");
+
+      // Vérifier le paiement même sur Warpcast
       const canPlay = await checkAndPayGasFees();
       console.log("💸 Can play:", canPlay);
 
@@ -518,6 +534,7 @@ const PianoTilesGame: React.FC = () => {
     isConnected,
     connect,
     connectors,
+    isInWarpcast,
   ]);
 
   useEffect(() => {
