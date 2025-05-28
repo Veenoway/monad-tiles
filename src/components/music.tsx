@@ -25,9 +25,9 @@ interface Tile {
 const melody: string[] = [];
 
 const bgs: string[] = [
+  "/background/3.jpg",
   "/background/1.jpg",
   "/background/2.jpg",
-  "/background/3.jpg",
   "/background/4.jpg",
 ];
 
@@ -420,11 +420,6 @@ const PianoTilesGame: React.FC = () => {
   };
 
   const startGame = async () => {
-    if (!address) {
-      setIsOpen(true);
-      return;
-    }
-
     setTxCount(0);
 
     stopAllSounds();
@@ -656,7 +651,7 @@ const PianoTilesGame: React.FC = () => {
             addFeedback("Bonus ", "#FF4500");
             bonusTimerRef.current = null;
           }, 30000);
-          txCount = newMultiplier === 2 ? 4 : 8;
+          txCount = newMultiplier === 2 ? 1 : 1;
         } else {
           setTileSpeed((prev) => prev * 0.9);
           setSpawnInterval((prev) => prev / 0.9);
