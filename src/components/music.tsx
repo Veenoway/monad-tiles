@@ -212,10 +212,24 @@ const PianoTilesGame: React.FC = () => {
   } | null>(null);
 
   useEffect(() => {
-    // audioRef.current = new Audio("/bloop-1.mp3");
-    bonusAudioRefs.current = bonusSongs.map((song) => new Audio(song));
+    // Initialiser le son de clic
+    audioRef.current = new Audio("/bloop-1.mp3");
+    audioRef.current.volume = sfxVolume;
+    audioRef.current.muted = isMuted;
+
+    // Initialiser les sons de bonus
+    bonusAudioRefs.current = bonusSongs.map((song) => {
+      const audio = new Audio(song);
+      audio.volume = sfxVolume;
+      audio.muted = isMuted;
+      return audio;
+    });
+
+    // Initialiser le son de bonus spécial
     specialBonusAudioRef.current = new Audio(specialBonusSoundPath);
-  }, []);
+    specialBonusAudioRef.current.volume = sfxVolume;
+    specialBonusAudioRef.current.muted = isMuted;
+  }, [sfxVolume, isMuted]);
 
   const updateAllAudioVolumes = useCallback(() => {
     const allAudios = [
@@ -609,6 +623,15 @@ const PianoTilesGame: React.FC = () => {
         if (address) {
           click(address);
         }
+
+        // Jouer le son de clic
+        if (audioRef.current) {
+          audioRef.current.currentTime = 0;
+          audioRef.current
+            .play()
+            .catch((err) => console.log("Erreur lecture son:", err));
+        }
+
         return newRows;
       }
       return prevRows;
