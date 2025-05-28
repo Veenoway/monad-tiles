@@ -10,6 +10,30 @@ import {
   useState,
 } from "react";
 import FrameWalletProvider from "./frame";
+import { DebugLog } from "./types";
+
+// Déclaration du type pour farcasterDebug
+declare global {
+  interface Window {
+    farcasterDebug: DebugLog[];
+  }
+}
+
+// Fonction de debug
+const debug = (message: string, data?: unknown) => {
+  // Log dans la console
+  console.warn(`[FARCASTER DEBUG] ${message}`, data || "");
+
+  // Stocker dans window pour debug
+  if (typeof window !== "undefined") {
+    window.farcasterDebug = window.farcasterDebug || [];
+    window.farcasterDebug.push({
+      timestamp: new Date().toISOString(),
+      message,
+      data,
+    } as DebugLog);
+  }
+};
 
 interface FrameContextValue {
   context: FrameContext | null;
@@ -45,28 +69,42 @@ export function FrameProvider({ children }: FrameProviderProps) {
 
   useEffect(() => {
     const load = async () => {
+      debug("🚀 Starting SDK initialization");
+      debug("🌐 Current URL", window.location.href);
+      debug("👤 User Agent", window.navigator.userAgent);
+
       try {
+        debug("📦 Waiting for SDK context...");
         const context = await sdk.context;
+
         if (context) {
+          debug("✅ SDK context received", context);
           setContext(context as FrameContext);
           setActions(sdk.actions);
           setIsEthProviderAvailable(sdk.wallet.ethProvider ? true : false);
+          debug("🔧 Actions available", !!sdk.actions);
+          debug("💰 ETH Provider available", !!sdk.wallet.ethProvider);
         } else {
-          setError("Failed to load Farcaster context");
+          const error = "Failed to load Farcaster context";
+          debug("❌ " + error);
+          setError(error);
         }
+
+        debug("🎮 Calling ready()...");
         await sdk.actions.ready();
+        debug("✨ ready() called successfully");
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to initialize SDK"
-        );
-        console.error("SDK initialization error:", err);
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to initialize SDK";
+        debug("❌ SDK initialization error", err);
+        setError(errorMessage);
       }
     };
 
     if (sdk && !isSDKLoaded) {
       load().then(() => {
         setIsSDKLoaded(true);
-        console.log("SDK loaded");
+        debug("✅ SDK loaded and initialized");
       });
     }
   }, [isSDKLoaded]);

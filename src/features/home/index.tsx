@@ -1,23 +1,52 @@
 "use client";
 import { FarcasterActions } from "@/components/actions";
 import { useFrame } from "@/lib/farcaster/provider";
-import { useEffect, useState } from "react";
+import { DebugLog } from "@/lib/farcaster/types";
+import { useEffect } from "react";
+
+// Déclaration du type pour farcasterDebug
+declare global {
+  interface Window {
+    farcasterDebug: Array<{
+      timestamp: string;
+      message: string;
+      data?: unknown;
+      component?: string;
+    }>;
+  }
+}
+
+// Fonction de debug
+const debug = (message: string, data?: unknown) => {
+  console.warn(`[HOME DEBUG] ${message}`, data || "");
+  if (typeof window !== "undefined") {
+    window.farcasterDebug = window.farcasterDebug || [];
+    window.farcasterDebug.push({
+      timestamp: new Date().toISOString(),
+      component: "Home",
+      message,
+      data,
+    } as DebugLog);
+  }
+};
 
 export const Home = () => {
   const { actions, isSDKLoaded } = useFrame();
-  const [readyCalled, setReadyCalled] = useState(false);
 
   useEffect(() => {
+    debug("🔄 Home component mounted");
+    debug("📦 SDK Loaded status", isSDKLoaded);
+    debug("🔧 Actions available", !!actions);
+
     if (isSDKLoaded && actions) {
-      console.log("🟡 SDK loaded, calling ready...");
+      debug("🎮 Calling ready() from Home component");
       actions
-        .ready({ disableNativeGestures: true })
+        .ready()
         .then(() => {
-          console.log("🟢 actions.ready() called!");
-          setReadyCalled(true);
+          debug("✨ ready() called successfully from Home");
         })
-        .catch((err) => {
-          console.error("🔴 Error calling ready:", err);
+        .catch((error) => {
+          debug("❌ Error calling ready()", error);
         });
     }
   }, [isSDKLoaded, actions]);
