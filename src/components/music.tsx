@@ -1,14 +1,13 @@
 "use client";
 import { useMiniAppContext } from "@/hook/useMiniApp";
 import { usePianoRelay } from "@/hook/usePianoTiles";
-import { useModalStore } from "@/store/modalStore";
 import Image from "next/image";
 import Link from "next/link";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FaRankingStar } from "react-icons/fa6";
 import { GoMute, GoUnmute } from "react-icons/go";
 import { IoSettingsSharp } from "react-icons/io5";
-import { useAccount } from "wagmi";
+import { useAccount, useConnect } from "wagmi";
 
 interface Tile {
   id: number;
@@ -114,8 +113,8 @@ const gameOverSound: string = "/sound/haha.mp3";
 type LeaderboardEntry = [string, number, number];
 
 const PianoTilesGame: React.FC = () => {
-  const { setIsOpen } = useModalStore();
-  const { address } = useAccount();
+  const { address, isConnected } = useAccount();
+  const { connect, connectors } = useConnect();
   const {
     userRank,
     currentGlobalCount,
@@ -426,6 +425,11 @@ const PianoTilesGame: React.FC = () => {
   };
 
   const startGame = useCallback(async () => {
+    if (!isConnected) {
+      connect({ connector: connectors[0] });
+      return;
+    }
+
     try {
       const canPlay = await checkAndPayGasFees();
       if (!canPlay) {
@@ -444,7 +448,13 @@ const PianoTilesGame: React.FC = () => {
       console.error("Error starting game:", error);
       alert("Failed to start game");
     }
-  }, [checkAndPayGasFees, computedInitialSpeed]);
+  }, [
+    checkAndPayGasFees,
+    computedInitialSpeed,
+    isConnected,
+    connect,
+    connectors,
+  ]);
 
   const handleGameOver = useCallback(async () => {
     setIsPlaying(false);
@@ -981,12 +991,11 @@ const PianoTilesGame: React.FC = () => {
           <div className="flex gap-4 mt-[120px]">
             <button
               onClick={() => {
-                if (!address) {
-                  setIsOpen(true);
+                if (!isConnected) {
+                  connect({ connector: connectors[0] });
                   return;
-                } else {
-                  setShowSettings(true);
                 }
+                setShowSettings(true);
               }}
               className="px-3 py-1.5 bg-[#a1055c] text-3xl uppercase text-white rounded-md"
             >
@@ -996,16 +1005,15 @@ const PianoTilesGame: React.FC = () => {
               onClick={startGame}
               className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out"
             >
-              Start
+              {!isConnected ? "Connect Wallet" : "Start"}
             </button>
             <button
               onClick={() => {
-                if (!address) {
-                  setIsOpen(true);
+                if (!isConnected) {
+                  connect({ connector: connectors[0] });
                   return;
-                } else {
-                  setShowLeaderboard(true);
                 }
+                setShowLeaderboard(true);
               }}
               className="px-3 py-1.5 bg-[#a1055c] text-4xl uppercase text-white rounded-md"
             >
