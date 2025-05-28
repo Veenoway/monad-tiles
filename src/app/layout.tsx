@@ -1,14 +1,11 @@
-import { MiniAppProvider } from "@/lib/farcaster/context";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+
 import { FrameProvider } from "@/lib/farcaster/provider";
-import { Metadata } from "next";
-import { Montserrat } from "next/font/google";
+import WagmiProviders from "@/lib/wagmi/provider";
 import "./globals.css";
 
-const poppins = Montserrat({
-  variable: "--font-poppins",
-  subsets: ["latin"],
-  weight: "500",
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Monad Farcaster MiniApp Template",
@@ -17,15 +14,15 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="en">
-      <body className={`${poppins.variable} antialiased`}>
-        <FrameProvider>
-          <MiniAppProvider>{children}</MiniAppProvider>
-        </FrameProvider>
+      <body className={inter.className}>
+        <WagmiProviders>
+          <FrameProvider>{children}</FrameProvider>
+        </WagmiProviders>
       </body>
     </html>
   );

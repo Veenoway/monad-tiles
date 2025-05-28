@@ -1,10 +1,13 @@
+import { FarcasterActions } from "@/components/actions";
+import AddFrameButton from "@/components/framer";
 import { Home as HomeComponent } from "@/features/home";
 import { Metadata } from "next";
 
 export default function Home() {
   return (
     <>
-      <HomeComponent />
+      <FarcasterActions />
+      <HomeComponent /> <AddFrameButton />
     </>
   );
 }

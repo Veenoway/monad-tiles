@@ -1,23 +1,8 @@
-"use client";
-
 import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createConfig, http, WagmiProvider } from "wagmi";
-import { monadTestnet } from "../wagmi/config";
+import { monadTestnet } from "wagmi/chains";
 
-// Configuration du client de requêtes avec des options optimisées
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 60 * 1000, // 1 minute
-      retry: 3,
-      refetchOnWindowFocus: false,
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    },
-  },
-});
-
-// Configuration de Wagmi avec le connecteur Farcaster
 export const config = createConfig({
   chains: [monadTestnet],
   transports: {
@@ -25,6 +10,8 @@ export const config = createConfig({
   },
   connectors: [farcasterFrame()],
 });
+
+const queryClient = new QueryClient();
 
 export default function FrameWalletProvider({
   children,

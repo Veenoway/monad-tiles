@@ -1,67 +1,43 @@
-"use client";
+import { FrameContext } from "@farcaster/frame-core/dist/context";
+import sdk from "@farcaster/frame-sdk";
+import { useFrame } from "./provider";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
-
-interface MiniAppContext {
-  user?: {
-    username: string;
-    fid: number;
-    displayName: string;
-    pfpUrl: string;
-  };
-  client?: {
-    name: string;
-    safeAreaInsets: {
-      top: number;
-      right: number;
-      bottom: number;
-      left: number;
-    };
-  };
-  actions?: {
-    addFrame: () => Promise<void>;
-    composeCast: (text: string, media?: string[]) => Promise<void>;
-    viewProfile: (fid: number) => Promise<void>;
-  };
+// Define specific types for each context
+interface FarcasterContextResult {
+  context: FrameContext;
+  actions: typeof sdk.actions | null;
+  isEthProviderAvailable: boolean;
 }
 
-const MiniAppContext = createContext<{
-  context: MiniAppContext | null;
-  setContext: (context: MiniAppContext) => void;
-}>({
-  context: null,
-  setContext: () => {},
-});
-
-export function MiniAppProvider({ children }: { children: React.ReactNode }) {
-  const [context, setContext] = useState<MiniAppContext | null>(null);
-
-  useEffect(() => {
-    // Initialiser le contexte avec les valeurs par défaut
-    setContext({
-      client: {
-        name: "browser",
-        safeAreaInsets: {
-          top: 0,
-          right: 0,
-          bottom: 0,
-          left: 0,
-        },
-      },
-    });
-  }, []);
-
-  return (
-    <MiniAppContext.Provider value={{ context, setContext }}>
-      {children}
-    </MiniAppContext.Provider>
-  );
+interface NoContextResult {
+  type: null;
+  context: null;
+  actions: null;
+  isEthProviderAvailable: boolean;
 }
 
-export function useMiniAppContext() {
-  const context = useContext(MiniAppContext);
-  if (!context) {
-    throw new Error("useMiniAppContext must be used within a MiniAppProvider");
+// Union type of all possible results
+type ContextResult = FarcasterContextResult | NoContextResult;
+
+export const useMiniAppContext = (): ContextResult => {
+  // Try to get Farcaster context
+  try {
+    const farcasterContext = useFrame();
+    if (farcasterContext.context) {
+      return {
+        context: farcasterContext.context,
+        actions: farcasterContext.actions,
+        isEthProviderAvailable: farcasterContext.isEthProviderAvailable,
+      } as FarcasterContextResult;
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  } catch (e) {
+    // Ignore error if not in Farcaster context
   }
-  return context;
-}
+
+  // No context found
+  return {
+    context: null,
+    actions: null,
+  } as NoContextResult;
+};
