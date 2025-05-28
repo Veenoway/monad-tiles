@@ -8,6 +8,13 @@ export const STRESS_CONTRACT_ABI = [
     type: "constructor",
   },
   {
+    inputs: [],
+    name: "payGameFee",
+    outputs: [],
+    stateMutability: "payable",
+    type: "function",
+  },
+  {
     anonymous: false,
     inputs: [
       {

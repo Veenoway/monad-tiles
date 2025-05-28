@@ -44,7 +44,7 @@ export function usePianoRelay(): UsePianoRelayReturn {
   const pageSize = 10;
   const [gameCount, setGameCount] = useState(0);
   const GAMES_BEFORE_PAYMENT = 10;
-  const PAYMENT_AMOUNT = "0.1";
+  const PAYMENT_AMOUNT = "0.2";
 
   const { writeContractAsync: payGasFees } = useWriteContract();
 
@@ -75,8 +75,6 @@ export function usePianoRelay(): UsePianoRelayReturn {
       refetch: () => void;
     };
 
-  console.log("Raw leaderboard data:", leaderboardData);
-
   const { data: currentGlobalCount, refetch: refetchGlobalCount } =
     useReadContract({
       address: PIANO_CONTRACT_ADDRESS,
@@ -103,6 +101,29 @@ export function usePianoRelay(): UsePianoRelayReturn {
   });
 
   console.log("User rank:", userRank);
+
+  const { data: hasPaidFees } = useReadContract({
+    address: PIANO_CONTRACT_ADDRESS,
+    abi: PIANO_CONTRACT_ABI,
+    functionName: "players",
+    args: address ? [address] : undefined,
+    query: {
+      enabled: true,
+      refetchInterval: 5000,
+    },
+  });
+
+  const checkPaymentStatus = useCallback(async () => {
+    if (!hasPaidFees) return false;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const [_, __, ___, hasPaid] = hasPaidFees as [
+      bigint,
+      bigint,
+      bigint,
+      boolean
+    ];
+    return hasPaid;
+  }, [hasPaidFees]);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [txHashes, setTxHashes] = useState<string[]>([]);
@@ -160,7 +181,7 @@ export function usePianoRelay(): UsePianoRelayReturn {
       const tx = await payGasFees({
         address: PIANO_CONTRACT_ADDRESS,
         abi: PIANO_CONTRACT_ABI,
-        functionName: "payGasFees",
+        functionName: "payGameFee",
         value: parseEther(PAYMENT_AMOUNT),
       });
 
@@ -176,13 +197,13 @@ export function usePianoRelay(): UsePianoRelayReturn {
       console.error("❌ Error paying gas fees:", error);
       return false;
     }
-  }, [address, payGasFees]);
+  }, [payGasFees]);
 
   const checkAndPayGasFees = useCallback(async () => {
     try {
-      // Vérifier si un paiement est nécessaire
-      if (gameCount >= GAMES_BEFORE_PAYMENT - 1) {
-        console.log("💸 Payment required: 0.1 MON");
+      const hasPaid = await checkPaymentStatus();
+      if (!hasPaid) {
+        console.log("💸 Payment required: 0.2 MON");
         const success = await handleGasPayment();
         if (!success) {
           console.error("❌ Payment failed");
@@ -192,14 +213,13 @@ export function usePianoRelay(): UsePianoRelayReturn {
         return true;
       }
 
-      // Si pas de paiement nécessaire, on peut jouer
-      console.log("✅ No payment needed, can play");
+      console.log("✅ Payment already made, can play");
       return true;
     } catch (error) {
       console.error("❌ Error in checkAndPayGasFees:", error);
       return false;
     }
-  }, [address, gameCount, handleGasPayment]);
+  }, [checkPaymentStatus, handleGasPayment]);
 
   const submitScore = useCallback(
     async (score: number) => {

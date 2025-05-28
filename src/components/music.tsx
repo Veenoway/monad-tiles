@@ -180,6 +180,14 @@ const PianoTilesGame: React.FC = () => {
 
   const [gameStarted, setGameStarted] = useState(false);
 
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  const [notification, setNotification] = useState<{
+    message: string;
+    type: "success" | "error" | "info";
+  } | null>(null);
+
   useEffect(() => {
     // audioRef.current = new Audio("/bloop-1.mp3");
     bonusAudioRefs.current = bonusSongs.map((song) => new Audio(song));
@@ -424,6 +432,56 @@ const PianoTilesGame: React.FC = () => {
     }, 1000);
   };
 
+  const showNotification = (
+    message: string,
+    type: "success" | "error" | "info"
+  ) => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
+  };
+
+  const handleGameOver = useCallback(async () => {
+    setIsPlaying(false);
+    if (score > 0) {
+      try {
+        console.log("Submitting score:", score);
+        const canPlay = await checkAndPayGasFees();
+        if (!canPlay) {
+          showNotification(
+            "Please pay gas fees (0.2 MON) to submit your score",
+            "error"
+          );
+          return;
+        }
+        await submitScore(score);
+      } catch (error) {
+        console.error("Error submitting score:", error);
+        showNotification(
+          "Failed to submit score. Please make sure you have paid the gas fees.",
+          "error"
+        );
+      }
+    }
+  }, [score, submitScore, checkAndPayGasFees]);
+
+  const handlePayment = async () => {
+    setIsProcessingPayment(true);
+    try {
+      const success = await checkAndPayGasFees();
+      if (success) {
+        setShowPaymentModal(false);
+        startGame();
+      } else {
+        showNotification("Payment failed. Please try again.", "error");
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      showNotification("Payment failed. Please try again.", "error");
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
   const startGame = useCallback(async () => {
     if (!isConnected) {
       connect({ connector: connectors[0] });
@@ -434,7 +492,7 @@ const PianoTilesGame: React.FC = () => {
       console.log("Checking gas fees before starting game...");
       const canPlay = await checkAndPayGasFees();
       if (!canPlay) {
-        alert("Please pay gas fees (0.1 MON) to start playing");
+        setShowPaymentModal(true);
         return;
       }
       console.log("Gas fees paid, starting game...");
@@ -448,9 +506,7 @@ const PianoTilesGame: React.FC = () => {
       setSpawnInterval(600);
     } catch (error) {
       console.error("Error starting game:", error);
-      alert(
-        "Failed to start game. Please make sure you have paid the gas fees."
-      );
+      showNotification("Failed to start game. Please try again.", "error");
     }
   }, [
     checkAndPayGasFees,
@@ -459,28 +515,6 @@ const PianoTilesGame: React.FC = () => {
     connect,
     connectors,
   ]);
-
-  const handleGameOver = useCallback(async () => {
-    setIsPlaying(false);
-    if (score > 0) {
-      try {
-        console.log("Submitting score:", score);
-        const canPlay = await checkAndPayGasFees();
-        if (!canPlay) {
-          alert("Please pay gas fees (0.1 MON) to submit your score");
-          return;
-        }
-        await submitScore(score);
-        console.log("Score submitted successfully");
-        alert(`Score submitted: ${score}`);
-      } catch (error) {
-        console.error("Error submitting score:", error);
-        alert(
-          "Failed to submit score. Please make sure you have paid the gas fees."
-        );
-      }
-    }
-  }, [score, submitScore, checkAndPayGasFees]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -952,6 +986,36 @@ const PianoTilesGame: React.FC = () => {
     );
   };
 
+  const renderPaymentModal = () => {
+    if (!showPaymentModal) return null;
+
+    return (
+      <div className="absolute z-[12000] inset-0 bg-[rgba(11,4,51,0.95)] flex flex-col items-center justify-center p-4">
+        <h2 className="text-3xl text-white font-bold uppercase italic mb-6">
+          Payment Required
+        </h2>
+        <p className="text-white text-xl mb-8 text-center">
+          To play the game, you need to pay 0.2 MON for gas fees.
+        </p>
+        <div className="flex gap-4">
+          <button
+            onClick={() => setShowPaymentModal(false)}
+            className="px-6 py-3 bg-gray-600 text-white rounded-xl hover:scale-95 transition-all duration-200"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handlePayment}
+            disabled={isProcessingPayment}
+            className="px-6 py-3 bg-[#a1055c] text-white rounded-xl hover:scale-95 transition-all duration-200 disabled:opacity-50"
+          >
+            {isProcessingPayment ? "Processing..." : "Pay 0.2 MON"}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div
       className="sm:rounded-2xl relative overflow-hidden shadow-lg shadow-[rgba(0,0,0,0.2)] mx-auto lg:mt-[60px]"
@@ -961,6 +1025,20 @@ const PianoTilesGame: React.FC = () => {
         fontFamily: "Boogaloo",
       }}
     >
+      {notification && (
+        <div
+          className={`absolute top-4 left-1/2 transform -translate-x-1/2 z-[13000] px-6 py-3 rounded-xl text-white font-bold ${
+            notification.type === "success"
+              ? "bg-green-500"
+              : notification.type === "error"
+              ? "bg-red-500"
+              : "bg-blue-500"
+          }`}
+        >
+          {notification.message}
+        </div>
+      )}
+      {showPaymentModal && renderPaymentModal()}
       {showSettings && renderSettings()}
       {showLeaderboard && renderLeaderboard()}
       {!gameStarted && (
