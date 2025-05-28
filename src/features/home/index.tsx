@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-ts-comment */
 "use client";
 import PianoTilesGame from "@/components/music";
 import { useFrame } from "@/lib/farcaster/provider";
@@ -8,37 +7,9 @@ export const Home = () => {
   const { actions, isSDKLoaded } = useFrame();
 
   useEffect(() => {
-    const initializeApp = async () => {
-      if (!isSDKLoaded || !actions) {
-        console.warn("🚫 Waiting for SDK to load...");
-        return;
-      }
+    if (!isSDKLoaded || !actions) return;
 
-      try {
-        console.warn("✅ SDK loaded, initializing app...");
-
-        // @ts-ignore
-        if (actions?.set) {
-          console.warn("🔄 Setting initial frame state...");
-          // @ts-ignore
-          await actions.set({
-            title: "Monad Tiles",
-            image: "https://monadtiles.xyz/logo/new-logo.png",
-            buttons: [{ label: "Start" }],
-          });
-        }
-
-        console.warn("🎮 Calling ready()...");
-        // @ts-ignore
-
-        await sdk.actions.ready();
-        console.warn("✨ ready() called successfully");
-      } catch (error) {
-        console.error("❌ Error during app initialization:", error);
-      }
-    };
-
-    initializeApp();
+    actions.ready({ disableNativeGestures: true }).catch(console.error);
   }, [isSDKLoaded, actions]);
 
   return (
