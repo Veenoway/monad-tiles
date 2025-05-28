@@ -21,7 +21,7 @@ export async function GET() {
       tags: ["monad", "farcaster", "miniapp", "game", "tiles"],
       primaryCategory: "games",
       buttonTitle: "Play Monad Tiles",
-      splashImageUrl: `${appUrl}/logo/new-logo.png`,
+      splashImageUrl: `${appUrl}/pfp-port.png`,
       splashBackgroundColor: "#190e59",
       disableNativeGestures: true,
       allowFullscreen: true,
