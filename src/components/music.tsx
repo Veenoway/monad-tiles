@@ -25,9 +25,9 @@ interface Tile {
 const melody: string[] = [];
 
 const bgs: string[] = [
-  "/background/3.jpg",
   "/background/1.jpg",
   "/background/2.jpg",
+  "/background/3.jpg",
   "/background/4.jpg",
 ];
 
@@ -420,10 +420,10 @@ const PianoTilesGame: React.FC = () => {
   };
 
   const startGame = async () => {
-    // if (!address) {
-    //   setIsOpen(true);
-    //   return;
-    // }
+    if (!address) {
+      setIsOpen(true);
+      return;
+    }
 
     setTxCount(0);
 
@@ -656,13 +656,13 @@ const PianoTilesGame: React.FC = () => {
             addFeedback("Bonus ", "#FF4500");
             bonusTimerRef.current = null;
           }, 30000);
-          txCount = 1;
+          txCount = newMultiplier === 2 ? 4 : 8;
         } else {
           setTileSpeed((prev) => prev * 0.9);
           setSpawnInterval((prev) => prev / 0.9);
           setCurrentBonusImage("/bonus/bonus-fin-2.png");
           addFeedback("Slower!", "#00FF00");
-          txCount = 1;
+          txCount = 4;
         }
         handleClicks();
       } else if (clickedTile.isBonus) {
@@ -675,13 +675,13 @@ const PianoTilesGame: React.FC = () => {
             addFeedback("+1 Life", "#00FF00");
           }
         }
-        txCount = 1;
+        txCount = 4;
       } else {
         if (audioRef.current) {
           audioRef.current.currentTime = 0;
           audioRef.current.play();
         }
-        txCount = 1;
+        txCount = 2;
       }
       txCount *= scoreMultiplier;
       console.log("txCount", txCount);
