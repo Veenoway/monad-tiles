@@ -28,12 +28,10 @@ export const Home = () => {
           });
         }
 
-        // Attendre un peu que tout soit chargé
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-
         console.warn("🎮 Calling ready()...");
         // @ts-ignore
-        await actions.ready({ disableNativeGestures: true });
+
+        await sdk.actions.ready();
         console.warn("✨ ready() called successfully");
       } catch (error) {
         console.error("❌ Error during app initialization:", error);
