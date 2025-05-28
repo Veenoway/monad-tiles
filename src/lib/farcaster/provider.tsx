@@ -68,13 +68,15 @@ export function FrameProvider({ children }: FrameProviderProps) {
         }
 
         console.log("SDK is available, attempting to get context...");
+        console.log("Current URL:", window.location.href);
+        console.log("User Agent:", window.navigator.userAgent);
 
         // Initialiser le SDK avec un timeout
         const initPromise = new Promise<void>((resolve, reject) => {
           timeoutId = setTimeout(() => {
             console.error("SDK initialization timeout");
             reject(new Error("SDK initialization timeout"));
-          }, 5000);
+          }, 10000); // Augmenté à 10 secondes
 
           // Essayer d'obtenir le contexte
           sdk.context
@@ -90,6 +92,11 @@ export function FrameProvider({ children }: FrameProviderProps) {
                 setActions(sdk.actions);
                 setIsEthProviderAvailable(!!sdk.wallet.ethProvider);
                 console.log("SDK context set successfully");
+                console.log("Actions available:", !!sdk.actions);
+                console.log(
+                  "ETH Provider available:",
+                  !!sdk.wallet.ethProvider
+                );
               }
               resolve();
             })

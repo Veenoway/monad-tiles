@@ -2,17 +2,27 @@
 import { FarcasterRedirect } from "@/components/farcaster-redirect";
 import PianoTilesGame from "@/components/music";
 import { useFrame } from "@/lib/farcaster/provider";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export const Home = () => {
   const { actions, isSDKLoaded } = useFrame();
+  const [isContentReady, setIsContentReady] = useState(false);
 
   useEffect(() => {
-    if (isSDKLoaded && actions) {
-      // Appeler ready() quand le contenu est chargé
-      actions.ready().catch(console.error);
+    if (isSDKLoaded && actions && isContentReady) {
+      // Appeler ready() avec disableNativeGestures pour éviter les conflits de gestes
+      actions.ready({ disableNativeGestures: true }).catch(console.error);
     }
-  }, [isSDKLoaded, actions]);
+  }, [isSDKLoaded, actions, isContentReady]);
+
+  // Marquer le contenu comme prêt une fois que tout est chargé
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsContentReady(true);
+    }, 1000); // Attendre 1 seconde pour s'assurer que tout est chargé
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <main
