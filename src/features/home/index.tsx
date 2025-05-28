@@ -1,16 +1,25 @@
 "use client";
 import { FarcasterActions } from "@/components/actions";
-import PianoTilesGame from "@/components/music";
 import { useFrame } from "@/lib/farcaster/provider";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export const Home = () => {
   const { actions, isSDKLoaded } = useFrame();
+  const [readyCalled, setReadyCalled] = useState(false);
 
   useEffect(() => {
-    if (!isSDKLoaded || !actions) return;
-
-    actions.ready({ disableNativeGestures: true }).catch(console.error);
+    if (isSDKLoaded && actions) {
+      console.log("🟡 SDK loaded, calling ready...");
+      actions
+        .ready({ disableNativeGestures: true })
+        .then(() => {
+          console.log("🟢 actions.ready() called!");
+          setReadyCalled(true);
+        })
+        .catch((err) => {
+          console.error("🔴 Error calling ready:", err);
+        });
+    }
   }, [isSDKLoaded, actions]);
 
   return (
@@ -27,9 +36,9 @@ export const Home = () => {
         {/* <div className="absolute right-5 top-5 hidden lg:flex">
           <WalletConnection />
         </div> */}
-        <div className="w-full mx-auto">
+        {/* <div className="w-full mx-auto">
           <PianoTilesGame />
-        </div>
+        </div> */}
         {/* <div className="flex lg:hidden items-center justify-center mt-5">
           <WalletConnection />
         </div>{" "} */}
