@@ -183,34 +183,13 @@ export function usePianoRelay(): UsePianoRelayReturn {
   const handleGasPayment = useCallback(async () => {
     try {
       console.log("💸 Initiating gas fee payment...");
-
-      // Vérifier si nous sommes sur Warpcast
-      const isInWarpcast =
-        typeof window !== "undefined" &&
-        (window.location.href.includes("warpcast.com") ||
-          window.location.href.includes("warpcast.app") ||
-          window.navigator.userAgent.includes("Warpcast"));
-
-      let tx;
-      if (isInWarpcast) {
-        // Sur Warpcast, utiliser le connecteur farcasterFrame
-        tx = await payGasFees({
-          address: PIANO_CONTRACT_ADDRESS,
-          abi: PIANO_CONTRACT_ABI,
-          functionName: "payGameFee",
-          value: parseEther(PAYMENT_AMOUNT),
-          chainId: monadTestnet.id,
-        });
-      } else {
-        // Sur le web, utiliser le wallet normal
-        tx = await payGasFees({
-          address: PIANO_CONTRACT_ADDRESS,
-          abi: PIANO_CONTRACT_ABI,
-          functionName: "payGameFee",
-          value: parseEther(PAYMENT_AMOUNT),
-          chainId: monadTestnet.id,
-        });
-      }
+      const tx = await payGasFees({
+        address: PIANO_CONTRACT_ADDRESS,
+        abi: PIANO_CONTRACT_ABI,
+        functionName: "payGameFee",
+        value: parseEther(PAYMENT_AMOUNT),
+        chainId: monadTestnet.id,
+      });
 
       if (!tx) {
         console.error("❌ Transaction failed");
@@ -231,15 +210,8 @@ export function usePianoRelay(): UsePianoRelayReturn {
       const hasPaid = await checkPaymentStatus();
       if (!hasPaid) {
         console.log("💸 Payment required: 0.2 MON");
-        const success = await handleGasPayment();
-        if (!success) {
-          console.error("❌ Payment failed");
-          return false;
-        }
-        console.log("✅ Payment successful");
-        return true;
+        return await handleGasPayment();
       }
-
       console.log("✅ Payment already made, can play");
       return true;
     } catch (error) {
@@ -250,6 +222,11 @@ export function usePianoRelay(): UsePianoRelayReturn {
 
   const submitScore = useCallback(
     async (score: number) => {
+      if (!address) {
+        console.error("❌ No address found");
+        return;
+      }
+
       setIsLoading(true);
       setError(null);
       try {

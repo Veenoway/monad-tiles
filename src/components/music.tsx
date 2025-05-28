@@ -465,27 +465,15 @@ const PianoTilesGame: React.FC = () => {
 
   const handleGameOver = useCallback(async () => {
     setIsPlaying(false);
-    if (score > 0) {
+    if (score > 0 && address) {
       try {
-        console.log("Submitting score:", score);
-        const canPlay = await checkAndPayGasFees();
-        if (!canPlay) {
-          showNotification(
-            "Please pay gas fees (0.2 MON) to submit your score",
-            "error"
-          );
-          return;
-        }
         await submitScore(score);
       } catch (error) {
         console.error("Error submitting score:", error);
-        showNotification(
-          "Failed to submit score. Please make sure you have paid the gas fees.",
-          "error"
-        );
+        showNotification("Failed to submit score.", "error");
       }
     }
-  }, [score, submitScore, checkAndPayGasFees]);
+  }, [score, submitScore, address]);
 
   const handlePayment = async () => {
     setIsProcessingPayment(true);
@@ -516,18 +504,6 @@ const PianoTilesGame: React.FC = () => {
     }
 
     try {
-      console.log("🔍 Checking gas fees before starting game...");
-      console.log("🌐 Environment:", isInWarpcast ? "Warpcast" : "Web");
-
-      // Vérifier le paiement même sur Warpcast
-      const canPlay = await checkAndPayGasFees();
-      console.log("💸 Can play:", canPlay);
-
-      if (!canPlay) {
-        console.log("💰 Payment required, showing modal");
-        setShowPaymentModal(true);
-      }
-
       console.log("🎮 Starting game...");
       setGameStarted(true);
       setIsPlaying(true);
@@ -541,14 +517,7 @@ const PianoTilesGame: React.FC = () => {
       console.error("❌ Error starting game:", error);
       showNotification("Failed to start game. Please try again.", "error");
     }
-  }, [
-    checkAndPayGasFees,
-    computedInitialSpeed,
-    isConnected,
-    connect,
-    isInWarpcast,
-    isEthProviderAvailable,
-  ]);
+  }, [isConnected, connect, isEthProviderAvailable, computedInitialSpeed]);
 
   useEffect(() => {
     if (!isPlaying) return;
