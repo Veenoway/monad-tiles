@@ -16,7 +16,7 @@ export async function GET() {
       name: "Monad Tiles",
       iconUrl: `${appUrl}/logo.png`,
       homeUrl: `${appUrl}`,
-      imageUrl: `${appUrl}/MonadTiles.jpg`,
+      imageUrl: `${appUrl}/logo-m.jpg`,
       screenshotUrls: [`${appUrl}/MonadTiles.jpg`],
       tags: ["monad", "farcaster", "miniapp", "game", "tiles"],
       primaryCategory: "games",
