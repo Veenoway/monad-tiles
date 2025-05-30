@@ -102,8 +102,8 @@ const bonusSongs: string[] = [
 ];
 
 const bgMusics: string[] = [
-  "/bloody-tears.mp3",
   "/sound/undertale.mp3",
+  "/bloody-tears.mp3",
   "/sound/route.mp3",
   "/sound/sasageyo.mp3",
 ];
@@ -216,6 +216,10 @@ const PianoTilesGame: React.FC = () => {
     audioRef.current = new Audio("/bloop-1.mp3");
     audioRef.current.volume = sfxVolume;
     audioRef.current.muted = isMuted;
+    console.log("🎵 Son de clic initialisé:", {
+      volume: audioRef.current.volume,
+      muted: audioRef.current.muted,
+    });
 
     // Initialiser les sons de bonus
     bonusAudioRefs.current = bonusSongs.map((song) => {
@@ -626,10 +630,16 @@ const PianoTilesGame: React.FC = () => {
 
         // Jouer le son de clic
         if (audioRef.current) {
+          console.log("🎵 Tentative de lecture du son:", {
+            volume: audioRef.current.volume,
+            muted: audioRef.current.muted,
+            readyState: audioRef.current.readyState,
+          });
           audioRef.current.currentTime = 0;
           audioRef.current
             .play()
-            .catch((err) => console.log("Erreur lecture son:", err));
+            .then(() => console.log("✅ Son joué avec succès"))
+            .catch((err) => console.log("❌ Erreur lecture son:", err));
         }
 
         return newRows;
