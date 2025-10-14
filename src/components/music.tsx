@@ -1,6 +1,7 @@
 "use client";
 import { useMiniAppContext } from "@/hook/useMiniApp";
-import { usePianoRelay } from "@/hook/usePianoTiles";
+import { usePianoGasless } from "@/hook/usePianoTiles";
+import { useSmartAccount } from "@/hook/useSmartAccount";
 import { farcasterFrame } from "@farcaster/frame-wagmi-connector";
 import Image from "next/image";
 import Link from "next/link";
@@ -115,7 +116,7 @@ const gameOverSound: string = "/sound/haha.mp3";
 type LeaderboardEntry = [string, number, number];
 
 const PianoTilesGame: React.FC = () => {
-  const { address, isConnected, chainId } = useAccount();
+  const { isConnected, chainId } = useAccount();
   const { connect, connectors } = useConnect();
   const { switchChain } = useSwitchChain();
   const { actions, isEthProviderAvailable } = useMiniAppContext();
@@ -125,8 +126,10 @@ const PianoTilesGame: React.FC = () => {
     leaderboardFormatted,
     click,
     submitScore,
-    checkAndPayGasFees,
-  } = usePianoRelay();
+    startGameWithGasless,
+  } = usePianoGasless();
+  const { smartAccount } = useSmartAccount();
+  const address = smartAccount?.address;
 
   // Vérifier si nous sommes dans Warpcast
   const isInWarpcast =
@@ -204,7 +207,7 @@ const PianoTilesGame: React.FC = () => {
   const [gameStarted, setGameStarted] = useState(false);
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isProcessingPayment] = useState(false);
 
   const [notification, setNotification] = useState<{
     message: string;
@@ -493,24 +496,6 @@ const PianoTilesGame: React.FC = () => {
     }
   }, [score, submitScore, address]);
 
-  const handlePayment = async () => {
-    setIsProcessingPayment(true);
-    try {
-      const success = await checkAndPayGasFees();
-      if (success) {
-        setShowPaymentModal(false);
-        startGame();
-      } else {
-        showNotification("Payment failed. Please try again.", "error");
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-      showNotification("Payment failed. Please try again.", "error");
-    } finally {
-      setIsProcessingPayment(false);
-    }
-  };
-
   const startGame = useCallback(async () => {
     if (!isConnected) {
       if (isEthProviderAvailable) {
@@ -518,6 +503,21 @@ const PianoTilesGame: React.FC = () => {
       } else {
         showNotification("Wallet connection only via Warpcast", "error");
       }
+      return;
+    }
+    if (!smartAccount) {
+      showNotification("Smart account not found", "error");
+      return;
+    }
+    if (!smartAccount.isDeployed) {
+      showNotification("Smart account not deployed", "error");
+      return;
+    }
+    const txHash = await startGameWithGasless(smartAccount.address);
+    console.log("🎮 Game started with gasless:", txHash);
+
+    if (!txHash) {
+      showNotification("Failed to start game. Please try again.", "error");
       return;
     }
 
@@ -535,7 +535,14 @@ const PianoTilesGame: React.FC = () => {
       console.error("❌ Error starting game:", error);
       showNotification("Failed to start game. Please try again.", "error");
     }
-  }, [isConnected, connect, isEthProviderAvailable, computedInitialSpeed]);
+  }, [
+    isConnected,
+    connect,
+    isEthProviderAvailable,
+    computedInitialSpeed,
+    startGameWithGasless,
+    smartAccount,
+  ]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -624,8 +631,8 @@ const PianoTilesGame: React.FC = () => {
         const newRows = [...prevRows];
         newRows.splice(tileIndex, 1);
         setClickedTile(newTile);
-        if (address) {
-          click(address);
+        if (smartAccount) {
+          click();
         }
 
         // Jouer le son de clic
@@ -653,25 +660,6 @@ const PianoTilesGame: React.FC = () => {
       if (!address) return;
 
       setTxCount((prev) => prev + count);
-
-      Array.from({ length: count }).forEach((_, index) => {
-        const relayerIndex = index % 6;
-
-        fetch("/api/relay", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Cache-Control": "no-cache",
-          },
-          body: JSON.stringify({
-            playerAddress: address,
-            action: "click",
-            relayerIndex,
-          }),
-        }).catch((error) => {
-          console.error("Error sending transaction:", error);
-        });
-      });
     },
     [address]
   );
@@ -1032,7 +1020,7 @@ const PianoTilesGame: React.FC = () => {
             Cancel
           </button>
           <button
-            onClick={handlePayment}
+            // onClick={handlePayment}
             disabled={isProcessingPayment}
             className="px-6 py-3 bg-[#a1055c] text-white rounded-xl hover:scale-95 transition-all duration-200 disabled:opacity-50"
           >
