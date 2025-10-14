@@ -12,7 +12,7 @@ export async function createHybridSmartAccount(
   ownerAddress: Address
 ) {
   const walletClient = createWalletClient({
-    account: ownerAddress, // ← CRITIQUE: Spécifier l'account
+    account: ownerAddress,
     chain: monadTestnet,
     transport: custom(provider),
   });

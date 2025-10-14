@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useMiniAppContext } from "@/lib/farcaster/context";
+import { useFrame } from "@/lib/farcaster/provider";
 import { useEffect, useState } from "react";
 import type { Address } from "viem";
 import { useAccount } from "wagmi";
@@ -21,6 +22,7 @@ export function useSmartAccount() {
     error: null,
     smartAccountAddress: null,
   });
+  const { ethProvider } = useFrame();
 
   useEffect(() => {
     async function initSmartAccount() {
@@ -30,7 +32,7 @@ export function useSmartAccount() {
 
       try {
         // Récupérer le provider Ethereum de Farcaster
-        const provider = (window as any).ethereum;
+        const provider = ethProvider || (window as any).ethereum;
 
         if (!provider) {
           throw new Error("Ethereum provider not available");

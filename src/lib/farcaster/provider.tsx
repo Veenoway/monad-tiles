@@ -41,6 +41,8 @@ interface FrameContextValue {
   isEthProviderAvailable: boolean;
   error: string | null;
   actions: typeof sdk.actions | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ethProvider: any | null;
 }
 
 const FrameProviderContext = createContext<FrameContextValue | undefined>(
@@ -66,6 +68,8 @@ export function FrameProvider({ children }: FrameProviderProps) {
     useState<boolean>(false);
   const [isSDKLoaded, setIsSDKLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [ethProvider, setEthProvider] = useState<any | null>(null);
 
   useEffect(() => {
     const load = async () => {
@@ -76,7 +80,8 @@ export function FrameProvider({ children }: FrameProviderProps) {
       try {
         debug("📦 Waiting for SDK context...");
         const context = await sdk.context;
-
+        console.log("context", context);
+        console.log("sdk.wallet.ethProvider", sdk.wallet);
         if (context) {
           debug("✅ SDK context received", context);
           setContext(context as FrameContext);
@@ -84,6 +89,9 @@ export function FrameProvider({ children }: FrameProviderProps) {
           setIsEthProviderAvailable(sdk.wallet.ethProvider ? true : false);
           debug("🔧 Actions available", !!sdk.actions);
           debug("💰 ETH Provider available", !!sdk.wallet.ethProvider);
+        } else if (sdk.wallet.ethProvider) {
+          setEthProvider(sdk.wallet.ethProvider);
+          setIsEthProviderAvailable(true);
         } else {
           const error = "Failed to load Farcaster context";
           debug("❌ " + error);
@@ -117,6 +125,7 @@ export function FrameProvider({ children }: FrameProviderProps) {
         isSDKLoaded,
         isEthProviderAvailable,
         error,
+        ethProvider,
       }}
     >
       <FrameWalletProvider>{children}</FrameWalletProvider>
