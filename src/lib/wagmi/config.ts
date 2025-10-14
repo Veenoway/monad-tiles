@@ -1,5 +1,6 @@
 import { farcasterFrame as miniAppConnector } from "@farcaster/frame-wagmi-connector";
 import { createConfig, http } from "wagmi";
+import { injected } from "wagmi/connectors";
 
 export const monadTestnet = {
   id: 10143,
@@ -11,8 +12,16 @@ export const monadTestnet = {
     symbol: "MONAD",
   },
   rpcUrls: {
-    default: { http: ["https://rpc.testnet.monad.xyz"] },
-    public: { http: ["https://rpc.testnet.monad.xyz"] },
+    default: {
+      http: [
+        "https://monad-testnet.blockvision.org/v1/31Ihx9ZHjswZZld678DwIAer7H9",
+      ],
+    },
+    public: {
+      http: [
+        "https://monad-testnet.blockvision.org/v1/31Ihx9ZHjswZZld678DwIAer7H9",
+      ],
+    },
   },
   blockExplorers: {
     default: {
@@ -20,12 +29,21 @@ export const monadTestnet = {
       url: "https://explorer.testnet.monad.xyz",
     },
   },
-};
+} as const;
 
 export const config = createConfig({
   chains: [monadTestnet],
   transports: {
     [monadTestnet.id]: http(),
   },
-  connectors: [miniAppConnector()],
+  connectors: [
+    miniAppConnector(),
+    injected({
+      shimDisconnect: true,
+      target: "metaMask",
+    }),
+  ],
 });
+
+export const METAMASK_DELEGATOR_CONTRACT =
+  "0x63c0c19a282a1b52b07dd5a65b58948a07dae32b";

@@ -1,6 +1,7 @@
 "use client";
 import { WalletConnection } from "@/components/connector";
 import PianoTilesGame from "@/components/music";
+import { SmartAccountManager } from "@/components/smartAccountDemo";
 import { useFrame } from "@/lib/farcaster/provider";
 import { useEffect } from "react";
 
@@ -38,6 +39,7 @@ export const Home = () => {
         <div className="flex items-center justify-center mt-5">
           <WalletConnection />
         </div>
+        <SmartAccountManager />
       </div>
     </main>
   );
