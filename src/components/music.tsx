@@ -12,6 +12,12 @@ import { IoSettingsSharp } from "react-icons/io5";
 import { monadTestnet } from "viem/chains";
 import { useAccount, useConnect, useSwitchChain } from "wagmi";
 
+import {
+  checkSmartAccountBalance,
+  isSmartAccountDeployed,
+} from "@/lib/metamask/transactions";
+import { SmartAccountManager } from "./smartAccountDemo";
+
 interface Tile {
   id: number;
   top: number;
@@ -128,7 +134,7 @@ const PianoTilesGame: React.FC = () => {
     submitScore,
     startGameWithGasless,
   } = usePianoGasless();
-  const { smartAccount } = useSmartAccount();
+  const { smartAccount, smartAccountAddress } = useSmartAccount();
   const address = smartAccount?.address;
 
   // Vérifier si nous sommes dans Warpcast
@@ -497,27 +503,12 @@ const PianoTilesGame: React.FC = () => {
   }, [score, submitScore, address]);
 
   const startGame = useCallback(async () => {
-    if (!isConnected) {
+    if (!isConnected && !smartAccount) {
       if (isEthProviderAvailable) {
         connect({ connector: farcasterFrame() });
       } else {
         showNotification("Wallet connection only via Warpcast", "error");
       }
-      return;
-    }
-    if (!smartAccount) {
-      showNotification("Smart account not found", "error");
-      return;
-    }
-    if (!smartAccount.isDeployed) {
-      showNotification("Smart account not deployed", "error");
-      return;
-    }
-    const txHash = await startGameWithGasless(smartAccount.address);
-    console.log("🎮 Game started with gasless:", txHash);
-
-    if (!txHash) {
-      showNotification("Failed to start game. Please try again.", "error");
       return;
     }
 
@@ -635,7 +626,6 @@ const PianoTilesGame: React.FC = () => {
           click();
         }
 
-        // Jouer le son de clic
         if (audioRef.current) {
           console.log("🎵 Tentative de lecture du son:", {
             volume: audioRef.current.volume,
@@ -1031,6 +1021,25 @@ const PianoTilesGame: React.FC = () => {
     );
   };
 
+  const [balance, setBalance] = useState(BigInt(0));
+  const [deployed, setDeployed] = useState(false);
+
+  const refresh = async () => {
+    if (!smartAccountAddress) return;
+
+    const bal = await checkSmartAccountBalance(smartAccountAddress);
+    const dep = await isSmartAccountDeployed(smartAccountAddress);
+
+    setBalance(bal);
+    setDeployed(dep);
+  };
+
+  useEffect(() => {
+    refresh();
+  }, [smartAccountAddress]);
+
+  const isReady = deployed && balance > BigInt(0);
+
   return (
     <div
       className="sm:rounded-2xl relative overflow-hidden shadow-lg shadow-[rgba(0,0,0,0.2)] mx-auto lg:mt-[60px]"
@@ -1052,6 +1061,13 @@ const PianoTilesGame: React.FC = () => {
         >
           {notification.message}
         </div>
+      )}
+      {!isReady && address && (
+        <SmartAccountManager
+          balance={balance}
+          deployed={deployed}
+          refresh={refresh}
+        />
       )}
       {showPaymentModal && renderPaymentModal()}
       {showSettings && renderSettings()}
@@ -1098,7 +1114,7 @@ const PianoTilesGame: React.FC = () => {
           <div className="flex gap-4 mt-[120px]">
             <button
               onClick={() => {
-                if (!isConnected) {
+                if (!isConnected && !smartAccount) {
                   connect({ connector: connectors[0] });
                   return;
                 }
@@ -1122,7 +1138,8 @@ const PianoTilesGame: React.FC = () => {
                 }
                 setShowLeaderboard(true);
               }}
-              className="px-3 py-1.5 bg-[#a1055c] text-4xl uppercase text-white rounded-md"
+              disabled={true}
+              className="px-3 py-1.5 bg-[#a1055c] text-4xl uppercase text-white rounded-md disabled:opacity-50"
             >
               <FaRankingStar />
             </button>

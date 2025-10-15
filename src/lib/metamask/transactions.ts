@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/metamask/transactions.ts - VERSION COMPLÈTE FINALE
 
 import { createPimlicoClient } from "permissionless/clients/pimlico";
@@ -73,7 +74,7 @@ export async function deploySmartAccount(
   const hash = await walletClient.sendTransaction({
     to: factory,
     data: factoryData,
-    value: 0n,
+    value: BigInt(0),
   });
 
   console.log("✅ Transaction de déploiement envoyée:", hash);
@@ -100,9 +101,10 @@ export async function sendUserOperation({
   smartAccount,
   to,
   value,
-  data = "0x",
 }: SendUserOperationParams): Promise<Hash> {
   console.log("📤 Envoi UserOperation...", { to, value });
+
+  console.log("smartAccount", smartAccount);
 
   // IMPORTANT: Vérifier que le smart account est déployé
   const deployed = await isSmartAccountDeployed(smartAccount.address);

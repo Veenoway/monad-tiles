@@ -1,6 +1,6 @@
 import React, { useCallback } from "react";
 import { formatEther } from "viem";
-import { usePianoRelay } from "../hook/usePianoTiles";
+import { usePianoGasless } from "../hook/usePianoTiles";
 
 const Leaderboard: React.FC = () => {
   const {
@@ -11,7 +11,7 @@ const Leaderboard: React.FC = () => {
     goToPreviousPage,
     canGoToNextPage,
     canGoToPreviousPage,
-  } = usePianoRelay();
+  } = usePianoGasless();
 
   const handlePreviousPage = useCallback(() => {
     goToPreviousPage();
@@ -30,30 +30,40 @@ const Leaderboard: React.FC = () => {
       <h2 className="text-2xl font-bold mb-4">Leaderboard</h2>
 
       <div className="flex flex-col gap-4">
-        {playerStats.map((player, index) => (
-          <div
-            key={player.address}
-            className="bg-gray-800 p-4 rounded-lg flex justify-between items-center"
-          >
-            <div className="flex items-center gap-4">
-              <span className="text-xl font-bold">
-                #{currentPage * 10 + index + 1}
-              </span>
-              <div>
-                <p className="font-medium">{player.address}</p>
+        {playerStats.map(
+          (
+            player: {
+              address: string;
+              bestScore: bigint;
+              lastScore: bigint;
+              clickCount: bigint;
+            },
+            index: number
+          ) => (
+            <div
+              key={player.address}
+              className="bg-gray-800 p-4 rounded-lg flex justify-between items-center"
+            >
+              <div className="flex items-center gap-4">
+                <span className="text-xl font-bold">
+                  #{currentPage * 10 + index + 1}
+                </span>
+                <div>
+                  <p className="font-medium">{player.address}</p>
+                  <p className="text-sm text-gray-400">
+                    Best score: {formatEther(player.bestScore)}
+                  </p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p>Score: {formatEther(player.lastScore)}</p>
                 <p className="text-sm text-gray-400">
-                  Best score: {formatEther(player.bestScore)}
+                  Clicks: {formatEther(player.clickCount)}
                 </p>
               </div>
             </div>
-            <div className="text-right">
-              <p>Score: {formatEther(player.lastScore)}</p>
-              <p className="text-sm text-gray-400">
-                Clicks: {formatEther(player.clickCount)}
-              </p>
-            </div>
-          </div>
-        ))}
+          )
+        )}
       </div>
 
       {totalPages > 1 && (
