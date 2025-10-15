@@ -1024,15 +1024,23 @@ const PianoTilesGame: React.FC = () => {
   const [balance, setBalance] = useState(BigInt(0));
   const [deployed, setDeployed] = useState(false);
 
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     if (!smartAccountAddress) return;
 
-    const bal = await checkSmartAccountBalance(smartAccountAddress);
-    const dep = await isSmartAccountDeployed(smartAccountAddress);
+    try {
+      const [bal, dep] = await Promise.all([
+        checkSmartAccountBalance(smartAccountAddress),
+        isSmartAccountDeployed(smartAccountAddress),
+      ]);
 
-    setBalance(bal);
-    setDeployed(dep);
-  };
+      setBalance(bal);
+      setDeployed(dep);
+
+      return { balance: bal, deployed: dep };
+    } catch (error) {
+      console.error("Error refreshing account status:", error);
+    }
+  }, [smartAccountAddress]);
 
   useEffect(() => {
     refresh();
@@ -1066,7 +1074,9 @@ const PianoTilesGame: React.FC = () => {
         <SmartAccountManager
           balance={balance}
           deployed={deployed}
-          refresh={refresh}
+          refresh={
+            refresh as () => Promise<{ balance: bigint; deployed: boolean }>
+          }
         />
       )}
       {showPaymentModal && renderPaymentModal()}

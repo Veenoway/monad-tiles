@@ -16,7 +16,7 @@ export function SmartAccountManager({
 }: {
   balance: bigint;
   deployed: boolean;
-  refresh: () => void;
+  refresh: () => Promise<{ balance: bigint; deployed: boolean }>;
 }) {
   const { smartAccount, smartAccountAddress } = useSmartAccount();
   const { data: walletClient } = useWalletClient();
@@ -29,8 +29,14 @@ export function SmartAccountManager({
 
     try {
       await fundSmartAccount(walletClient, smartAccountAddress, amount);
-      setTimeout(refresh, 2000);
-    } catch {
+
+      const result = await refresh();
+
+      if (result && result.balance < BigInt(parseEther("0.1"))) {
+        throw new Error("Funding did not reach expected amount");
+      }
+    } catch (error) {
+      console.error("Funding failed:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -43,8 +49,14 @@ export function SmartAccountManager({
 
     try {
       await deploySmartAccount(smartAccount, walletClient);
-      setTimeout(refresh, 2000);
-    } catch {
+
+      const result = await refresh();
+
+      if (result && !result.deployed) {
+        throw new Error("Deployment did not complete");
+      }
+    } catch (error) {
+      console.error("Deployment failed:", error);
     } finally {
       setIsProcessing(false);
     }
@@ -71,8 +83,6 @@ export function SmartAccountManager({
                   handleFund("1");
                 } else if (canDeploy && !deployed) {
                   handleDeploy();
-                } else if (isReady) {
-                  // handleSendUserOp();
                 }
               }}
               disabled={isProcessing}
