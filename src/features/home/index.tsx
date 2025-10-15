@@ -1,5 +1,4 @@
 "use client";
-import { WalletConnection } from "@/components/connector";
 import PianoTilesGame from "@/components/music";
 import { useFrame } from "@/lib/farcaster/provider";
 import { useEffect } from "react";
@@ -34,9 +33,6 @@ export const Home = () => {
       <div className="w-full sm:w-[95%] mx-auto lg:pt-10 gap-8">
         <div className="w-full mx-auto">
           <PianoTilesGame />
-        </div>
-        <div className="flex items-center justify-center mt-5">
-          <WalletConnection />
         </div>
       </div>
     </main>
