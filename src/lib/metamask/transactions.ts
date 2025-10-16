@@ -133,8 +133,8 @@ export async function sendUserOperation({
       calls: [
         {
           to: to,
-          value: BigInt(value),
-          data: data as `0x${string}`,
+          value: value as unknown as bigint,
+          data: data as unknown as `0x${string}`,
         },
       ],
       ...fee,
