@@ -127,43 +127,18 @@ export async function sendUserOperation({
     ), // You can get the API Key from the Pimlico dashboard.
   });
   console.log("currentNonce", nonce);
-  const currentNonce = await smartAccount.getNonce();
-  const { fast: gasPrice } = await pimlicoClient.getUserOperationGasPrice();
-  const userOperation = await smartAccount.prepareUserOperationRequest({
-    userOperation: {
-      callData: data || "0x",
-      callGasLimit: BigInt(200_000),
-      verificationGasLimit: BigInt(200_000),
-      preVerificationGas: BigInt(50_000),
-      maxFeePerGas: gasPrice.maxFeePerGas,
-      maxPriorityFeePerGas: gasPrice.maxPriorityFeePerGas,
-      nonce: currentNonce,
-      paymasterPostOpGasLimit: BigInt(0),
-      paymasterVerificationGasLimit: BigInt(0),
-    },
-  });
+  // const currentNonce = await smartAccount.getNonce();
+  const { fast: fee } = await pimlicoClient.getUserOperationGasPrice();
   try {
-    const updatedUserOperation = {
-      ...userOperation,
-      sender: smartAccount.address,
+    const userOpHash = await bundlerClient.sendUserOperation({
+      account: smartAccount,
       calls: [
         {
-          to,
-          value: parseEther(value),
-          data: data || "0x",
+          to: to,
+          value: parseEther("0"),
         },
       ],
-    };
-
-    // Signer l'UserOperation
-    const signature = await smartAccount.signUserOperation(
-      updatedUserOperation
-    );
-
-    // Envoyer l'UserOperation
-    const userOpHash = await bundlerClient.sendUserOperation({
-      ...updatedUserOperation,
-      signature,
+      ...fee,
     });
 
     console.log("✅ UserOperation envoyée:", userOpHash);
