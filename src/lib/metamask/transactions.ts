@@ -2,7 +2,7 @@
 // lib/metamask/transactions.ts - VERSION COMPLÈTE FINALE
 
 import { createPimlicoClient } from "permissionless/clients/pimlico";
-import { http, parseEther, parseUnits, type Address, type Hash } from "viem";
+import { http, parseEther, type Address, type Hash } from "viem";
 import { bundlerClient, publicClient } from "./config";
 
 // ===================================
@@ -126,14 +126,13 @@ export async function sendUserOperation({
   });
 
   const { fast: fee } = await pimlicoClient.getUserOperationGasPrice();
-  const gameFeeInWei = parseUnits(value, 18);
   try {
     const userOpHash = await bundlerClient.sendUserOperation({
       account: smartAccount,
       calls: [
         {
           to: to,
-          value: gameFeeInWei as unknown as bigint,
+          value: value as unknown as bigint,
           data: data as unknown as `0x${string}`,
         },
       ],

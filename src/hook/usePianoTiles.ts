@@ -150,11 +150,11 @@ export function usePianoGasless() {
         functionName: "payGameFee",
         args: [],
       });
-
+      const gameFee = "100000000000000";
       const txHash = await sendUserOperation({
         smartAccount,
         to: PIANO_CONTRACT_ADDRESS,
-        value: "0.0001", // Convertit en wei correctement
+        value: gameFee, // Convertit en wei correctement
         data: callData, // Ajoutez le callData ici
       });
 
