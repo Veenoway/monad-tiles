@@ -104,6 +104,8 @@ export async function sendUserOperation({
   value,
   data,
 }: SendUserOperationParams): Promise<Hash> {
+  console.log("🔍 Vérifications préalables...");
+  await diagnoseSmartAccount(smartAccount.address);
   // 1. Vérifier déploiement
   const deployed = await isSmartAccountDeployed(smartAccount.address);
   if (!deployed) {
@@ -216,6 +218,71 @@ export async function sendUserOperation({
   }
 }
 
+export async function diagnoseSmartAccount(smartAccountAddress: Address) {
+  console.log("\n═══════════════════════════════════");
+  console.log("🔍 DIAGNOSTIC SMART ACCOUNT");
+  console.log("═══════════════════════════════════\n");
+
+  try {
+    // 1. Adresse
+    console.log("📍 Adresse:", smartAccountAddress);
+
+    // 2. Déploiement
+    const code = await publicClient.getCode({ address: smartAccountAddress });
+    const deployed = code !== undefined && code !== "0x";
+    console.log("📦 Déployé:", deployed ? "✅ OUI" : "❌ NON");
+
+    // 3. Solde
+    const balance = await publicClient.getBalance({
+      address: smartAccountAddress,
+    });
+    console.log("💰 Solde:", formatEther(balance), "MON");
+
+    if (balance < parseEther("0.001")) {
+      console.log("⚠️  ATTENTION: Solde faible ! Ajoutez au moins 0.01 MON");
+    }
+
+    // 4. Nonce
+    if (deployed) {
+      const nonce = await publicClient.readContract({
+        address: smartAccountAddress,
+        abi: [
+          {
+            name: "getNonce",
+            type: "function",
+            stateMutability: "view",
+            inputs: [],
+            outputs: [{ type: "uint256" }],
+          },
+        ],
+        functionName: "getNonce",
+      });
+      console.log("🔢 Nonce:", nonce.toString());
+    }
+
+    // 5. Test connexion bundler
+    console.log("\n🔌 Test connexion Pimlico...");
+    const chainId = await bundlerClient.chain?.id;
+    console.log("⛓️  Chain ID:", chainId);
+
+    const entryPoints = await bundlerClient.getSupportedEntryPoints();
+    console.log("🚪 Entry Points:", entryPoints);
+
+    console.log("\n═══════════════════════════════════");
+    console.log("✅ DIAGNOSTIC TERMINÉ");
+    console.log("═══════════════════════════════════\n");
+
+    return {
+      deployed,
+      balance: formatEther(balance),
+      hasEnoughFunds: balance >= parseEther("0.001"),
+    };
+  } catch (error) {
+    console.error("❌ Erreur diagnostic:", error);
+    console.log("═══════════════════════════════════\n");
+    throw error;
+  }
+}
 // ===================================
 // 5. TEST DU BUNDLER
 // ===================================
