@@ -515,12 +515,7 @@ const PianoTilesGame: React.FC = () => {
       return;
     }
 
-    // const txHash = await startGameWithGasless();
-    // console.log("txHash", txHash);
-    // if (!txHash) {
-    //   showNotification("Failed to pay game fee. Please try again.", "error");
-    //   return;
-    // }
+    await startGameWithGasless();
 
     try {
       console.log("🎮 Starting game...");
