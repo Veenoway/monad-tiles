@@ -103,31 +103,18 @@ export async function sendUserOperation({
   to,
   value,
   data,
-  nonce,
 }: SendUserOperationParams): Promise<Hash> {
-  console.log("📤 Envoi UserOperation...", { to, value, data });
-
-  console.log("smartAccount", smartAccount);
-
-  // IMPORTANT: Vérifier que le smart account est déployé
   const deployed = await isSmartAccountDeployed(smartAccount.address);
-
   if (!deployed) {
-    throw new Error(
-      "❌ Smart account non déployé. " +
-        "Utilisez deploySmartAccount() d'abord."
-    );
+    throw new Error("❌ Smart account non déployé");
   }
-
-  console.log("✅ Smart account déployé, envoi UserOp...");
 
   const pimlicoClient = createPimlicoClient({
     transport: http(
       `https://api.pimlico.io/v2/10143/rpc?apikey=${process.env.NEXT_PUBLIC_PIMLICO_API_KEY}`
-    ), // You can get the API Key from the Pimlico dashboard.
+    ),
   });
-  console.log("currentNonce", nonce);
-  // const currentNonce = await smartAccount.getNonce();
+
   try {
     const { fast: gasPrice } = await pimlicoClient.getUserOperationGasPrice();
 
@@ -135,48 +122,53 @@ export async function sendUserOperation({
       {
         to,
         value: parseEther(value),
-        data: data || "0x",
+        data: data || ("0x" as `0x${string}`),
       },
     ];
 
+    // Estimer les gas
     const gasEstimate = await bundlerClient.estimateUserOperationGas({
       account: smartAccount,
       calls,
       ...gasPrice,
     });
 
-    // Envoyer l'UserOperation
+    console.log("⛽ Gas brut estimé:", gasEstimate);
+
+    // 🔥 NETTOYER les champs paymaster
+    const cleanGasEstimate = {
+      callGasLimit: gasEstimate.callGasLimit,
+      verificationGasLimit: gasEstimate.verificationGasLimit,
+      preVerificationGas: gasEstimate.preVerificationGas,
+      // On exclut paymasterPostOpGasLimit et paymasterVerificationGasLimit
+    };
+
+    console.log("⛽ Gas nettoyé:", cleanGasEstimate);
+
+    // Envoyer sans les champs paymaster
     const userOpHash = await bundlerClient.sendUserOperation({
       account: smartAccount,
       calls,
       ...gasPrice,
-      ...gasEstimate,
+      ...cleanGasEstimate, // ✅ Version nettoyée
     });
 
-    console.log("✅ UserOperation envoyée:", userOpHash);
+    console.log("✅ UserOp envoyée:", userOpHash);
 
-    // Attendre la confirmation
-    console.log("⏳ Attente de confirmation...");
     const { receipt } = await bundlerClient.waitForUserOperationReceipt({
       hash: userOpHash,
     });
 
-    console.log("✅ Transaction confirmée:", receipt.transactionHash);
     return receipt.transactionHash;
   } catch (error: any) {
-    console.error("❌ Erreur UserOperation:", error);
-    if (error.message.includes("nonce")) {
-      try {
-        const currentNonce = await smartAccount.getNonce();
-        console.error("Nonce actuel:", currentNonce);
-      } catch (nonceError) {
-        console.error("Erreur lors de la récupération du nonce:", nonceError);
-      }
+    console.error("❌ Erreur:", error);
+
+    if (error.message?.includes("nonce")) {
+      const currentNonce = await smartAccount.getNonce();
+      console.error("🔢 Nonce actuel:", currentNonce);
     }
 
-    throw new Error(
-      `Erreur UserOperation: ${error.shortMessage || error.message}`
-    );
+    throw new Error(`Erreur UserOp: ${error.shortMessage || error.message}`);
   }
 }
 
