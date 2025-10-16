@@ -1154,7 +1154,7 @@ const PianoTilesGame: React.FC = () => {
               </div>
             </Link>
           </div>{" "}
-          <p className="text-white text-base mt-[65px]">
+          <p className="text-white text-base mt-[65px] mb-5">
             Balance: {balance / BigInt(10 ** 18)}{" "}
             <span className="text-xs">MON</span>
           </p>
@@ -1171,7 +1171,7 @@ const PianoTilesGame: React.FC = () => {
             >
               <IoSettingsSharp />
             </button>
-            <div>
+            <div className="flex items-center gap-5">
               {smartAccount ? (
                 <button
                   onClick={() => handleFundWallet("1")}
