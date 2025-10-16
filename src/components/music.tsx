@@ -135,7 +135,6 @@ const PianoTilesGame: React.FC = () => {
     click,
     submitScore,
     startGameWithGasless,
-    payGameFee,
     error,
   } = usePianoGasless();
   const { smartAccount, smartAccountAddress } = useSmartAccount();
@@ -516,7 +515,7 @@ const PianoTilesGame: React.FC = () => {
       return;
     }
 
-    const txHash = await payGameFee();
+    const txHash = await startGameWithGasless();
     console.log("txHash", txHash);
     if (!txHash) {
       showNotification("Failed to pay game fee. Please try again.", "error");

@@ -113,11 +113,15 @@ export function usePianoGasless() {
   // SUBMIT SCORE - Smart Account (UNE signature)
   // ===================================
 
-  const startGameWithGasless = async (address: `0x${string}`) => {
+  const startGameWithGasless = async () => {
+    if (!smartAccount || !isDeployed) {
+      setError("Smart account non configuré");
+      return null;
+    }
     const callData = encodeFunctionData({
       abi: PIANO_CONTRACT_ABI,
       functionName: "click",
-      args: [address as `0x${string}`],
+      args: [smartAccountAddress as `0x${string}`],
     });
 
     // Envoyer via Smart Account
@@ -125,7 +129,7 @@ export function usePianoGasless() {
     const txHash = await sendUserOperation({
       smartAccount,
       to: PIANO_CONTRACT_ADDRESS,
-      value: "0.01",
+      value: "0.001",
       data: callData,
     });
     return txHash;
