@@ -3,7 +3,6 @@ import {
   PIANO_CONTRACT_ABI,
   PIANO_CONTRACT_ADDRESS,
 } from "@/constant/pianoTiles";
-import { publicClient } from "@/lib/metamask/config";
 import {
   isSmartAccountDeployed,
   sendUserOperation,
@@ -133,11 +132,6 @@ export function usePianoGasless() {
   };
 
   const payGameFee = useCallback(async () => {
-    if (!address) {
-      setError("Connectez votre wallet");
-      return null;
-    }
-
     if (!smartAccount || !isDeployed) {
       setError(
         "⚠️ Smart account non configuré. Allez dans les paramètres pour le configurer."
@@ -145,25 +139,25 @@ export function usePianoGasless() {
       return null;
     }
 
-    const playerData = await publicClient.readContract({
-      address: PIANO_CONTRACT_ADDRESS,
-      abi: PIANO_CONTRACT_ABI,
-      functionName: "players",
-      args: [address],
-    });
+    // const playerData = await publicClient.readContract({
+    //   address: PIANO_CONTRACT_ADDRESS,
+    //   abi: PIANO_CONTRACT_ABI,
+    //   functionName: "players",
+    //   args: [smartAccountAddress],
+    // });
 
-    console.log("État du joueur avant paiement:", {
-      registered: (playerData as any)?.registered,
-      hasPaidFee: (playerData as any)?.hasPaidFee,
-      txCount: (playerData as any)?.txCount.toString(),
-      playerData: playerData,
-    });
+    // console.log("État du joueur avant paiement:", {
+    //   registered: (playerData as any)?.registered,
+    //   hasPaidFee: (playerData as any)?.hasPaidFee,
+    //   txCount: (playerData as any)?.txCount.toString(),
+    //   playerData: playerData,
+    // });
 
-    // Si les frais sont déjà payés, on ne fait rien
-    if ((playerData as any)?.hasPaidFee) {
-      setError("Les frais de jeu ont déjà été payés");
-      return null;
-    }
+    // // Si les frais sont déjà payés, on ne fait rien
+    // if ((playerData as any)?.hasPaidFee) {
+    //   setError("Les frais de jeu ont déjà été payés");
+    //   return null;
+    // }
 
     setIsLoading(true);
     setError(null);
