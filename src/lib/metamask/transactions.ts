@@ -101,8 +101,9 @@ export async function sendUserOperation({
   smartAccount,
   to,
   value,
+  data,
 }: SendUserOperationParams): Promise<Hash> {
-  console.log("📤 Envoi UserOperation...", { to, value });
+  console.log("📤 Envoi UserOperation...", { to, value, data });
 
   console.log("smartAccount", smartAccount);
 
@@ -133,6 +134,7 @@ export async function sendUserOperation({
         {
           to: to,
           value: BigInt(value),
+          data: data as `0x${string}`,
         },
       ],
       ...fee,
