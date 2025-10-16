@@ -131,7 +131,6 @@ export async function sendUserOperation({
   try {
     const { fast: gasPrice } = await pimlicoClient.getUserOperationGasPrice();
 
-    // Préparer l'appel
     const calls = [
       {
         to,
@@ -140,11 +139,18 @@ export async function sendUserOperation({
       },
     ];
 
+    const gasEstimate = await bundlerClient.estimateUserOperationGas({
+      account: smartAccount,
+      calls,
+      ...gasPrice,
+    });
+
     // Envoyer l'UserOperation
     const userOpHash = await bundlerClient.sendUserOperation({
       account: smartAccount,
       calls,
-      ...gasPrice, // Spread les prix de gas
+      ...gasPrice,
+      ...gasEstimate,
     });
 
     console.log("✅ UserOperation envoyée:", userOpHash);
