@@ -119,20 +119,10 @@ export function usePianoGasless() {
       return null;
     }
 
-    // 🔥 NE PAS encoder le callData vous-même
-    // Laissez sendUserOperation s'en charger
-
-    const callData = encodeFunctionData({
-      abi: PIANO_CONTRACT_ABI,
-      functionName: "click",
-      args: [smartAccount.address],
-    });
-
     const txHash = await sendUserOperation({
       smartAccount,
       to: PIANO_CONTRACT_ADDRESS,
       value: "0",
-      data: callData,
     });
 
     return txHash;

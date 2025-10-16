@@ -95,7 +95,6 @@ interface SendUserOperationParams {
   smartAccount: any;
   to: Address;
   value: string;
-  data?: `0x${string}`;
   nonce?: bigint;
 }
 
@@ -103,7 +102,6 @@ export async function sendUserOperation({
   smartAccount,
   to,
   value,
-  data,
 }: SendUserOperationParams): Promise<Hash> {
   console.log("🔍 Vérifications préalables...");
   await diagnoseSmartAccount(smartAccount.address);
