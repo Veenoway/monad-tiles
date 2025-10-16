@@ -1172,15 +1172,6 @@ const PianoTilesGame: React.FC = () => {
               <IoSettingsSharp />
             </button>
             <div className="flex items-center gap-5">
-              {smartAccount ? (
-                <button
-                  onClick={() => handleFundWallet("1")}
-                  disabled={isProcessing}
-                  className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out disabled:opacity-50"
-                >
-                  {isProcessing ? "Funding..." : "Fund Wallet"}
-                </button>
-              ) : null}
               <button
                 onClick={startGame}
                 className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out"
@@ -1202,6 +1193,15 @@ const PianoTilesGame: React.FC = () => {
               <FaRankingStar />
             </button>
           </div>
+          {smartAccount ? (
+            <button
+              onClick={() => handleFundWallet("1")}
+              disabled={isProcessing}
+              className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 mx-auto py-2 hover:scale-95 transition-all duration-200 ease-in-out disabled:opacity-50"
+            >
+              {isProcessing ? "Funding..." : "Fund Wallet"}
+            </button>
+          ) : null}
           {error && <p className="text-red-500 text-sm mt-[20px]">{error}</p>}
         </div>
       )}
