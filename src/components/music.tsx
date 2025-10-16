@@ -133,6 +133,7 @@ const PianoTilesGame: React.FC = () => {
     click,
     submitScore,
     startGameWithGasless,
+    payGameFee,
   } = usePianoGasless();
   const { smartAccount, smartAccountAddress } = useSmartAccount();
   const address = smartAccount?.address;
@@ -509,6 +510,12 @@ const PianoTilesGame: React.FC = () => {
       } else {
         showNotification("Wallet connection only via Warpcast", "error");
       }
+      return;
+    }
+
+    const txHash = await payGameFee();
+    if (!txHash) {
+      showNotification("Failed to pay game fee. Please try again.", "error");
       return;
     }
 

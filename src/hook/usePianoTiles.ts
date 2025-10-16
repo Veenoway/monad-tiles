@@ -8,7 +8,7 @@ import {
   sendUserOperation,
 } from "@/lib/metamask/transactions";
 import { useCallback, useMemo, useState } from "react";
-import { encodeFunctionData } from "viem";
+import { encodeFunctionData, parseEther } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 import { useSmartAccount } from "./useSmartAccount";
 
@@ -131,6 +131,54 @@ export function usePianoGasless() {
     return txHash;
   };
 
+  const payGameFee = useCallback(async () => {
+    if (!address) {
+      setError("Connectez votre wallet");
+      return null;
+    }
+
+    if (!smartAccount || !isDeployed) {
+      setError(
+        "⚠️ Smart account non configuré. Allez dans les paramètres pour le configurer."
+      );
+      return null;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      console.log("💰 Paiement des frais de jeu via Smart Account");
+
+      const callData = encodeFunctionData({
+        abi: PIANO_CONTRACT_ABI,
+        functionName: "payGameFee",
+        args: [],
+      });
+
+      const txHash = await sendUserOperation({
+        smartAccount,
+        to: PIANO_CONTRACT_ADDRESS,
+        value: parseEther("0.0001").toString(),
+        data: callData,
+      });
+
+      console.log("✅ Frais de jeu payés:", txHash);
+      setTxHashes((prev) => [...prev, txHash]);
+
+      return txHash;
+    } catch (e: any) {
+      console.error("❌ Erreur de paiement:", e);
+      setError(e.message || "Erreur lors du paiement des frais");
+      throw e;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [address, smartAccount, isDeployed]);
+
+  // ===================================
+  // SUBMIT SCORE - Smart Account (UNE signature)
+  // ===================================
   const submitScore = useCallback(
     async (finalScore: number) => {
       if (!address) {
@@ -151,15 +199,12 @@ export function usePianoGasless() {
       try {
         console.log("🎹 Soumission score via Smart Account:", finalScore);
 
-        // Encoder l'appel submitScore(uint256, address)
         const callData = encodeFunctionData({
           abi: PIANO_CONTRACT_ABI,
           functionName: "submitScore",
-          args: [BigInt(Math.floor(finalScore)), address as `0x${string}`],
+          args: [BigInt(Math.floor(finalScore))],
         });
 
-        // Envoyer via Smart Account
-        // L'utilisateur signe UNE FOIS ici
         const txHash = await sendUserOperation({
           smartAccount,
           to: PIANO_CONTRACT_ADDRESS,
@@ -170,11 +215,9 @@ export function usePianoGasless() {
         console.log("✅ Score enregistré:", txHash);
         setTxHashes((prev) => [...prev, txHash]);
 
-        // Reset local
         setLocalClicks(0);
         setLocalScore(0);
 
-        // Rafraîchir
         await refetchLeaderboard();
         await refetchGlobalCount();
 
@@ -289,5 +332,6 @@ export function usePianoGasless() {
     canGoToNextPage,
     canGoToPreviousPage,
     startGameWithGasless,
+    payGameFee,
   };
 }

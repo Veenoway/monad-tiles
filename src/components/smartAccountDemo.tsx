@@ -74,7 +74,9 @@ export function SmartAccountManager({
           Setup your <br />
           Smart account{" "}
         </h3>
-
+        <h5 className="font-bold text-5xl mb-10 mt-20">
+          Make sure that your wallet h
+        </h5>
         <div className={``}>
           <div className="flex justify-center space-x-2 mx-auto">
             <button
