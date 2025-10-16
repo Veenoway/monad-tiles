@@ -3,13 +3,14 @@ import {
   PIANO_CONTRACT_ABI,
   PIANO_CONTRACT_ADDRESS,
 } from "@/constant/pianoTiles";
+import { publicClient } from "@/lib/metamask/config";
 import {
   isSmartAccountDeployed,
   sendUserOperation,
 } from "@/lib/metamask/transactions";
 import { useCallback, useMemo, useState } from "react";
 import { encodeFunctionData } from "viem";
-import { useAccount, usePublicClient, useReadContract } from "wagmi";
+import { useAccount, useReadContract } from "wagmi";
 import { useSmartAccount } from "./useSmartAccount";
 
 type PlayerStats = {
@@ -24,7 +25,6 @@ type LeaderboardEntry = [string, number, number];
 export function usePianoGasless() {
   const { address } = useAccount();
   const { smartAccount, smartAccountAddress } = useSmartAccount();
-  const { publicClient } = usePublicClient();
 
   const isDeployed = useMemo(() => {
     return isSmartAccountDeployed(smartAccount?.address);
@@ -153,13 +153,14 @@ export function usePianoGasless() {
     });
 
     console.log("État du joueur avant paiement:", {
-      registered: playerData?.registered,
-      hasPaidFee: playerData?.hasPaidFee,
-      txCount: playerData.txCount.toString(),
+      registered: (playerData as any)?.registered,
+      hasPaidFee: (playerData as any)?.hasPaidFee,
+      txCount: (playerData as any)?.txCount.toString(),
+      playerData: playerData,
     });
 
     // Si les frais sont déjà payés, on ne fait rien
-    if (playerData?.hasPaidFee) {
+    if ((playerData as any)?.hasPaidFee) {
       setError("Les frais de jeu ont déjà été payés");
       return null;
     }
