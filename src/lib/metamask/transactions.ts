@@ -159,8 +159,7 @@ export async function sendUserOperation({
     const userOpHash = await bundlerClient.sendUserOperation({
       account: smartAccount,
       calls,
-      ...boostedGas, // Gas boosté
-      // ❌ PAS d'estimation manuelle
+      ...boostedGas,
     });
 
     console.log("✅ UserOp envoyée:", userOpHash);
