@@ -139,8 +139,8 @@ export async function sendUserOperation({
 
     // ✅ BOOST x2 pour être sûr que ça mine
     const boostedGas = {
-      maxFeePerGas: gasPrice.fast.maxFeePerGas * BigInt(2.5),
-      maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas * BigInt(2.5),
+      maxFeePerGas: gasPrice.fast.maxFeePerGas * BigInt(3),
+      maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas * BigInt(3),
     };
     console.log("🚀 Gas boosté x2:", boostedGas);
 
