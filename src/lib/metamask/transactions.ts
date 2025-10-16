@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/metamask/transactions.ts - VERSION COMPLÈTE FINALE
 
-import { parseEther, type Address, type Hash } from "viem";
+import { createPimlicoClient } from "permissionless/clients/pimlico";
+import { formatEther, http, parseEther, type Address, type Hash } from "viem";
 import { bundlerClient, publicClient } from "./config";
 
 // ===================================
@@ -103,7 +104,46 @@ export async function sendUserOperation({
   value,
   data,
 }: SendUserOperationParams): Promise<Hash> {
+  // 1. Vérifier déploiement
+  const deployed = await isSmartAccountDeployed(smartAccount.address);
+  if (!deployed) {
+    throw new Error("❌ Smart account non déployé");
+  }
+
+  // 2. Vérifier le solde
+  const balance = await publicClient.getBalance({
+    address: smartAccount.address,
+  });
+
+  console.log("💰 Solde SA:", formatEther(balance), "MON");
+
+  if (balance < parseEther("0.001")) {
+    throw new Error(
+      `Solde insuffisant: ${formatEther(
+        balance
+      )} MON. Minimum requis: 0.001 MON`
+    );
+  }
+
+  const pimlicoClient = createPimlicoClient({
+    transport: http(
+      `https://api.pimlico.io/v2/10143/rpc?apikey=${process.env.NEXT_PUBLIC_PIMLICO_API_KEY}`
+    ),
+  });
+
   try {
+    // 3. Récupérer gas prices et BOOSTER
+    const gasPrice = await pimlicoClient.getUserOperationGasPrice();
+    console.log("⛽ Gas original:", gasPrice.fast);
+
+    // ✅ BOOST x2 pour être sûr que ça mine
+    const boostedGas = {
+      maxFeePerGas: gasPrice.fast.maxFeePerGas * BigInt(2),
+      maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas * BigInt(2),
+    };
+    console.log("🚀 Gas boosté x2:", boostedGas);
+
+    // 4. Préparer les calls
     const calls = [
       {
         to,
@@ -112,21 +152,67 @@ export async function sendUserOperation({
       },
     ];
 
+    // 5. ✅ ENVOYER SANS ESTIMATION - Laisser le bundler gérer
+    console.log("📤 Envoi UserOperation...");
     const userOpHash = await bundlerClient.sendUserOperation({
       account: smartAccount,
       calls,
+      ...boostedGas, // Gas boosté
+      // ❌ PAS d'estimation manuelle
     });
 
-    console.log("✅ Envoyée:", userOpHash);
+    console.log("✅ UserOp envoyée:", userOpHash);
+    console.log("🔗 Hash:", userOpHash);
 
+    // 6. Attendre avec timeout long et polling fréquent
+    console.log("⏳ Attente confirmation (max 2 minutes)...");
+
+    const startTime = Date.now();
     const { receipt } = await bundlerClient.waitForUserOperationReceipt({
       hash: userOpHash,
+      timeout: 120000, // ✅ 2 MINUTES
+      pollingInterval: 2000, // Vérifier toutes les 2 secondes
     });
+
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    console.log(`✅ CONFIRMÉE en ${duration}s !`);
+    console.log("📝 Transaction hash:", receipt.transactionHash);
+    console.log("🧱 Block:", receipt.blockNumber);
 
     return receipt.transactionHash;
   } catch (error: any) {
-    console.error("❌ Erreur:", error.message);
-    throw error;
+    console.error("❌ Erreur complète:", error);
+
+    // Analyser l'erreur
+    if (error.message?.includes("timeout") || error.name === "TimeoutError") {
+      // La UserOp a été envoyée mais pas confirmée
+      console.error("⏱️ TIMEOUT: Transaction pas confirmée après 2 minutes");
+      console.error("💡 Causes possibles:");
+      console.error("   - Gas trop bas (même avec boost)");
+      console.error("   - Bundler Pimlico surchargé");
+      console.error("   - Réseau Monad lent");
+
+      throw new Error(
+        "⏱️ Transaction timeout. Le réseau est peut-être surchargé. Réessayez dans 2 minutes."
+      );
+    }
+
+    if (error.message?.includes("nonce")) {
+      const currentNonce = await smartAccount.getNonce();
+      console.error("🔢 Nonce actuel:", currentNonce);
+      throw new Error("Nonce invalide. Une transaction est déjà en cours.");
+    }
+
+    if (error.message?.includes("insufficient")) {
+      throw new Error("Fonds insuffisants dans le Smart Account");
+    }
+
+    if (error.message?.includes("AA25")) {
+      throw new Error("Transaction déjà en cours avec ce nonce");
+    }
+
+    // Erreur générique
+    throw new Error(`Erreur: ${error.shortMessage || error.message}`);
   }
 }
 
