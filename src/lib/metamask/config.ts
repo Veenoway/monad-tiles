@@ -1,13 +1,9 @@
-import {
-  Implementation,
-  toMetaMaskSmartAccount,
-} from "@metamask/delegation-toolkit";
-import { createPublicClient, http } from "viem";
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { createPublicClient, createWalletClient, custom, http } from "viem";
 import {
   createBundlerClient,
   createPaymasterClient,
 } from "viem/account-abstraction";
-import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { monadTestnet } from "../wagmi/config";
 
 export const publicClient = createPublicClient({
@@ -15,16 +11,12 @@ export const publicClient = createPublicClient({
   transport: http(),
 });
 
-const privateKey = generatePrivateKey();
-const account = privateKeyToAccount(privateKey);
-
-export const smartAccount = await toMetaMaskSmartAccount({
-  client: publicClient,
-  implementation: Implementation.Hybrid,
-  deployParams: [account.address, [], [], []],
-  deploySalt: "0x",
-  signer: { account },
-});
+export function createWalletClientFromProvider(provider: any) {
+  return createWalletClient({
+    chain: monadTestnet,
+    transport: custom(provider),
+  });
+}
 
 const PIMLICO_API_KEY = process.env.NEXT_PUBLIC_PIMLICO_API_KEY;
 
@@ -43,6 +35,7 @@ export const bundlerClient = createBundlerClient({
   // ❌ Ne pas définir de paymaster pour l'instant
 });
 
+// You can use the paymaster of your choice
 export const paymasterClient = createPaymasterClient({
   transport: http(PIMLICO_URL),
 });
