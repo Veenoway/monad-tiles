@@ -1153,7 +1153,11 @@ const PianoTilesGame: React.FC = () => {
               </div>
             </Link>
           </div>{" "}
-          <div className="flex gap-4 mt-[120px]">
+          <p className="text-white text-basemt-[100px]">
+            Balance: {parseEther(balance.toString())}{" "}
+            <span className="text-xs">MON</span>
+          </p>
+          <div className="flex gap-4 mt-5">
             <button
               onClick={() => {
                 if (!isConnected && !smartAccount) {
@@ -1173,7 +1177,7 @@ const PianoTilesGame: React.FC = () => {
                   disabled={isProcessing}
                   className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out disabled:opacity-50"
                 >
-                  {isProcessing ? "Processing..." : "Fund Wallet (1 MON)"}
+                  {isProcessing ? "Funding..." : "Fund Wallet"}
                 </button>
               ) : null}
               <button
@@ -1197,7 +1201,6 @@ const PianoTilesGame: React.FC = () => {
               <FaRankingStar />
             </button>
           </div>
-          <p className="text-white text-base mt-4">Balance: {balance} MON</p>
         </div>
       )}
       {gameOver && renderGameOver()}
