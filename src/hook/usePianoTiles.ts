@@ -118,20 +118,20 @@ export function usePianoGasless() {
       setError("Smart account non configuré");
       return null;
     }
-    const callData = encodeFunctionData({
-      abi: PIANO_CONTRACT_ABI,
-      functionName: "click",
-      args: [smartAccountAddress as `0x${string}`],
-    });
 
-    // Envoyer via Smart Account
-    // L'utilisateur signe UNE FOIS ici
+    // 🔥 NE PAS encoder le callData vous-même
+    // Laissez sendUserOperation s'en charger
     const txHash = await sendUserOperation({
       smartAccount,
       to: PIANO_CONTRACT_ADDRESS,
-      value: "0.001",
-      data: callData,
+      value: "0",
+      data: encodeFunctionData({
+        abi: PIANO_CONTRACT_ABI,
+        functionName: "click",
+        args: [smartAccountAddress as `0x${string}`],
+      }),
     });
+
     return txHash;
   };
 
