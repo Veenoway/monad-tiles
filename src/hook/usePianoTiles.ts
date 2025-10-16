@@ -8,7 +8,7 @@ import {
   sendUserOperation,
 } from "@/lib/metamask/transactions";
 import { useCallback, useMemo, useState } from "react";
-import { encodeFunctionData, parseEther } from "viem";
+import { encodeFunctionData } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 import { useSmartAccount } from "./useSmartAccount";
 
@@ -154,7 +154,7 @@ export function usePianoGasless() {
       const txHash = await sendUserOperation({
         smartAccount,
         to: PIANO_CONTRACT_ADDRESS,
-        value: parseEther("0.0001").toString(), // Convertit en wei correctement
+        value: "0.0001", // Convertit en wei correctement
         data: callData, // Ajoutez le callData ici
       });
 
