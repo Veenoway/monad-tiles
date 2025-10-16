@@ -131,8 +131,8 @@ export async function sendUserOperation({
       account: smartAccount,
       calls: [
         {
-          to: "0x1234567890123456789012345678901234567890",
-          value: parseEther("0.001"),
+          to: to,
+          value: BigInt(value),
         },
       ],
       ...fee,
