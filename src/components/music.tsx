@@ -10,12 +10,14 @@ import { FaRankingStar } from "react-icons/fa6";
 import { GoMute, GoUnmute } from "react-icons/go";
 import { IoSettingsSharp } from "react-icons/io5";
 import { monadTestnet } from "viem/chains";
-import { useAccount, useConnect, useSwitchChain } from "wagmi";
+import { useAccount, useConnect, useSwitchChain, useWalletClient } from "wagmi";
 
 import {
   checkSmartAccountBalance,
+  fundSmartAccount,
   isSmartAccountDeployed,
 } from "@/lib/metamask/transactions";
+import { parseEther } from "viem";
 import { SmartAccountManager } from "./smartAccountDemo";
 
 interface Tile {
@@ -514,6 +516,7 @@ const PianoTilesGame: React.FC = () => {
     }
 
     const txHash = await payGameFee();
+    console.log("txHash", txHash);
     if (!txHash) {
       showNotification("Failed to pay game fee. Please try again.", "error");
       return;
@@ -1054,6 +1057,48 @@ const PianoTilesGame: React.FC = () => {
   }, [smartAccountAddress]);
 
   const isReady = deployed && balance > BigInt(0);
+  const { data: walletClient } = useWalletClient();
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleFund = async (amount: string) => {
+    if (!walletClient || !smartAccountAddress) return;
+
+    setIsProcessing(true);
+
+    try {
+      await fundSmartAccount(walletClient, smartAccountAddress, amount);
+
+      const result = await refresh();
+
+      if (result && result.balance < BigInt(parseEther("0.1"))) {
+        throw new Error("Funding did not reach expected amount");
+      }
+    } catch (error) {
+      console.error("Funding failed:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleFundWallet = async (amount: string) => {
+    if (!walletClient || !smartAccountAddress) return;
+
+    setIsProcessing(true);
+
+    try {
+      await fundSmartAccount(walletClient, smartAccountAddress, amount);
+
+      const result = await refresh();
+
+      if (result && result.balance < BigInt(parseEther("0.1"))) {
+        throw new Error("Funding did not reach expected amount");
+      }
+    } catch (error) {
+      console.error("Funding failed:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   return (
     <div
@@ -1141,6 +1186,15 @@ const PianoTilesGame: React.FC = () => {
             >
               <IoSettingsSharp />
             </button>
+            {smartAccount ? (
+              <button
+                onClick={() => handleFundWallet("1")}
+                disabled={isProcessing}
+                className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out disabled:opacity-50"
+              >
+                {isProcessing ? "Processing..." : "Fund Wallet (1 MON)"}
+              </button>
+            ) : null}
             <button
               onClick={startGame}
               className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out"

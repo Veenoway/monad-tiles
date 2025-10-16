@@ -31,7 +31,6 @@ export function useSmartAccount() {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
-        // Récupérer le provider Ethereum de Farcaster
         const provider = ethProvider || (window as any).ethereum;
 
         if (!provider) {
