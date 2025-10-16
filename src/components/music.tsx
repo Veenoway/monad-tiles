@@ -515,7 +515,7 @@ const PianoTilesGame: React.FC = () => {
       return;
     }
 
-    await startGameWithGasless();
+    // await startGameWithGasless();
 
     try {
       console.log("🎮 Starting game...");
