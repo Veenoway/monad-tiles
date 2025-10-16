@@ -134,8 +134,8 @@ export async function sendUserOperation({
       calls: [
         {
           to: to,
-          value: value as unknown as bigint,
-          // data: data ? (data as `0x${string}`) : "0x",
+          value: parseEther("0.0001"),
+          data: data ? (data as `0x${string}`) : "0x",
         },
       ],
       ...fee,
