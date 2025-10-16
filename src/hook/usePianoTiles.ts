@@ -133,63 +133,36 @@ export function usePianoGasless() {
 
   const payGameFee = useCallback(async () => {
     if (!smartAccount || !isDeployed) {
-      setError(
-        "⚠️ Smart account non configuré. Allez dans les paramètres pour le configurer."
-      );
+      setError("Smart account non configuré");
       return null;
     }
 
-    // const playerData = await publicClient.readContract({
-    //   address: PIANO_CONTRACT_ADDRESS,
-    //   abi: PIANO_CONTRACT_ABI,
-    //   functionName: "players",
-    //   args: [smartAccountAddress],
-    // });
-
-    // console.log("État du joueur avant paiement:", {
-    //   registered: (playerData as any)?.registered,
-    //   hasPaidFee: (playerData as any)?.hasPaidFee,
-    //   txCount: (playerData as any)?.txCount.toString(),
-    //   playerData: playerData,
-    // });
-
-    // // Si les frais sont déjà payés, on ne fait rien
-    // if ((playerData as any)?.hasPaidFee) {
-    //   setError("Les frais de jeu ont déjà été payés");
-    //   return null;
-    // }
-
-    setIsLoading(true);
-    setError(null);
-
     try {
+      // Récupérer le nonce actuel
+      const currentNonce = await smartAccount.getNonce();
+      console.log("Nonce actuel:", currentNonce);
+
       const callData = encodeFunctionData({
         abi: PIANO_CONTRACT_ABI,
         functionName: "payGameFee",
         args: [],
       });
 
-      const gameFee = BigInt("100000000000000"); // 0.0001 ether
-
       const txHash = await sendUserOperation({
         smartAccount,
         to: PIANO_CONTRACT_ADDRESS,
-        value: gameFee as unknown as string,
+        value: "100000000000000", // 0.0001 ether
         data: callData,
+        nonce: currentNonce + BigInt(1), // Incrémentation explicite du nonce
       });
 
-      console.log("✅ Frais de jeu payés:", txHash);
-      setTxHashes((prev) => [...prev, txHash]);
-
       return txHash;
-    } catch (e: any) {
-      console.error("❌ Erreur complète:", e);
-      setError(e.message || "Erreur lors du paiement des frais");
-      throw e;
-    } finally {
-      setIsLoading(false);
+    } catch (error) {
+      console.error("Detailed PayGameFee Nonce Error:", error);
+      setError(error instanceof Error ? error.message : "Erreur inconnue");
+      throw error;
     }
-  }, [address, smartAccount, isDeployed]);
+  }, [smartAccount, isDeployed]);
 
   // ===================================
   // SUBMIT SCORE - Smart Account (UNE signature)

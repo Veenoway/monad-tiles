@@ -95,6 +95,7 @@ interface SendUserOperationParams {
   to: Address;
   value: string;
   data?: `0x${string}`;
+  nonce?: bigint;
 }
 
 export async function sendUserOperation({
@@ -102,6 +103,7 @@ export async function sendUserOperation({
   to,
   value,
   data,
+  nonce,
 }: SendUserOperationParams): Promise<Hash> {
   console.log("📤 Envoi UserOperation...", { to, value, data });
 
@@ -124,8 +126,7 @@ export async function sendUserOperation({
       `https://api.pimlico.io/v2/10143/rpc?apikey=${process.env.NEXT_PUBLIC_PIMLICO_API_KEY}`
     ), // You can get the API Key from the Pimlico dashboard.
   });
-  const currentNonce = await smartAccount.getNonce();
-  console.log("currentNonce", currentNonce);
+  console.log("currentNonce", nonce);
   const { fast: fee } = await pimlicoClient.getUserOperationGasPrice();
   try {
     const userOpHash = await bundlerClient.sendUserOperation({
@@ -137,7 +138,7 @@ export async function sendUserOperation({
           data: data as unknown as `0x${string}`,
         },
       ],
-      nonce: currentNonce,
+      nonce: nonce,
       ...fee,
     });
 
