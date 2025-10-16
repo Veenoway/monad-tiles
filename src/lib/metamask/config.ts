@@ -21,13 +21,13 @@ if (!PIMLICO_API_KEY) {
   throw new Error("❌ NEXT_PUBLIC_PIMLICO_API_KEY doit être défini");
 }
 
-// URL Pimlico pour Monad Testnet
 const PIMLICO_URL = `https://api.pimlico.io/v2/10143/rpc?apikey=${PIMLICO_API_KEY}`;
 
 console.log("🔧 Configuration Pimlico pour Monad Testnet");
 
-// Bundler client avec Pimlico (qui inclut le paymaster automatiquement)
+// 🔥 CORRECTION : Ajouter client et désactiver paymaster
 export const bundlerClient = createBundlerClient({
+  client: publicClient, // ✅ IMPORTANT : Ajouter le publicClient
   transport: http(PIMLICO_URL),
-  chain: monadTestnet,
+  // ❌ Ne pas définir de paymaster pour l'instant
 });
