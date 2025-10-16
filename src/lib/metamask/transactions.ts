@@ -127,10 +127,12 @@ export async function sendUserOperation({
     ), // You can get the API Key from the Pimlico dashboard.
   });
   console.log("currentNonce", nonce);
+  const currentNonce = await smartAccount.getNonce();
   const { fast: fee } = await pimlicoClient.getUserOperationGasPrice();
   try {
     const userOpHash = await bundlerClient.sendUserOperation({
       account: smartAccount,
+      nonce: currentNonce,
       calls: [
         {
           to: to,
@@ -153,6 +155,15 @@ export async function sendUserOperation({
     return receipt.receipt.transactionHash;
   } catch (error: any) {
     console.error("❌ Erreur UserOperation:", error);
+    if (error.message.includes("nonce")) {
+      try {
+        const currentNonce = await smartAccount.getNonce();
+        console.error("Nonce actuel:", currentNonce);
+      } catch (nonceError) {
+        console.error("Erreur lors de la récupération du nonce:", nonceError);
+      }
+    }
+
     throw new Error(
       `Erreur UserOperation: ${error.shortMessage || error.message}`
     );
