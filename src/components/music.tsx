@@ -136,6 +136,7 @@ const PianoTilesGame: React.FC = () => {
     submitScore,
     startGameWithGasless,
     payGameFee,
+    error,
   } = usePianoGasless();
   const { smartAccount, smartAccountAddress } = useSmartAccount();
   const address = smartAccount?.address;
@@ -1153,7 +1154,7 @@ const PianoTilesGame: React.FC = () => {
               </div>
             </Link>
           </div>{" "}
-          <p className="text-white text-base mt-[85px]">
+          <p className="text-white text-base mt-[65px]">
             Balance: {balance / BigInt(10 ** 18)}{" "}
             <span className="text-xs">MON</span>
           </p>
@@ -1201,6 +1202,7 @@ const PianoTilesGame: React.FC = () => {
               <FaRankingStar />
             </button>
           </div>
+          {error && <p className="text-red-500 text-sm mt-[20px]">{error}</p>}
         </div>
       )}
       {gameOver && renderGameOver()}
