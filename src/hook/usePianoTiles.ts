@@ -8,7 +8,7 @@ import {
   sendUserOperation,
 } from "@/lib/metamask/transactions";
 import { useCallback, useMemo, useState } from "react";
-import { encodeFunctionData, parseEther } from "viem";
+import { encodeFunctionData } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 import { useSmartAccount } from "./useSmartAccount";
 
@@ -132,11 +132,6 @@ export function usePianoGasless() {
   };
 
   const payGameFee = useCallback(async () => {
-    if (!address) {
-      setError("Connectez votre wallet");
-      return null;
-    }
-
     if (!smartAccount || !isDeployed) {
       setError(
         "⚠️ Smart account non configuré. Allez dans les paramètres pour le configurer."
@@ -159,7 +154,7 @@ export function usePianoGasless() {
       const txHash = await sendUserOperation({
         smartAccount,
         to: PIANO_CONTRACT_ADDRESS,
-        value: parseEther("0.0001").toString(),
+        value: "0.00001",
         data: callData,
       });
 
@@ -181,11 +176,6 @@ export function usePianoGasless() {
   // ===================================
   const submitScore = useCallback(
     async (finalScore: number) => {
-      if (!address) {
-        setError("Connectez votre wallet");
-        return;
-      }
-
       if (!smartAccount || !isDeployed) {
         setError(
           "⚠️ Smart account non configuré. Allez dans les paramètres pour le configurer."
