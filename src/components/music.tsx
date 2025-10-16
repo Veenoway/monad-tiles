@@ -1166,21 +1166,23 @@ const PianoTilesGame: React.FC = () => {
             >
               <IoSettingsSharp />
             </button>
-            {smartAccount ? (
+            <div>
+              {smartAccount ? (
+                <button
+                  onClick={() => handleFundWallet("1")}
+                  disabled={isProcessing}
+                  className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out disabled:opacity-50"
+                >
+                  {isProcessing ? "Processing..." : "Fund Wallet (1 MON)"}
+                </button>
+              ) : null}
               <button
-                onClick={() => handleFundWallet("1")}
-                disabled={isProcessing}
-                className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out disabled:opacity-50"
+                onClick={startGame}
+                className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out"
               >
-                {isProcessing ? "Processing..." : "Fund Wallet (1 MON)"}
+                {!isConnected ? "Connect Wallet" : "Start"}
               </button>
-            ) : null}
-            <button
-              onClick={startGame}
-              className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out"
-            >
-              {!isConnected ? "Connect Wallet" : "Start"}
-            </button>
+            </div>
             <button
               onClick={() => {
                 if (!isConnected) {
@@ -1195,6 +1197,7 @@ const PianoTilesGame: React.FC = () => {
               <FaRankingStar />
             </button>
           </div>
+          <p className="text-white text-base mt-4">Balance: {balance} MON</p>
         </div>
       )}
       {gameOver && renderGameOver()}
