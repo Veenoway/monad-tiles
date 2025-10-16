@@ -1153,8 +1153,8 @@ const PianoTilesGame: React.FC = () => {
               </div>
             </Link>
           </div>{" "}
-          <p className="text-white text-basemt-[100px]">
-            Balance: {parseEther(balance.toString())}{" "}
+          <p className="text-white text-base mt-[85px]">
+            Balance: {balance / BigInt(10 ** 18)}{" "}
             <span className="text-xs">MON</span>
           </p>
           <div className="flex gap-4 mt-5">
