@@ -1118,7 +1118,7 @@ const PianoTilesGame: React.FC = () => {
       {!gameStarted && (
         <div className="absolute z-50 inset-0 py-10 flex flex-col items-center bg-[url('/bg/main-bg.jpg')] bg-no-repeat bg-bottom">
           <Image src="/logo/new-logo.png" alt="logo" width={300} height={120} />
-          <div className="flex items-center gap-10 mt-[90px]">
+          <div className="flex items-center gap-10 mt-[50px]">
             <Link
               href="https://x.com/Novee_VeenoX"
               target="_blank"
@@ -1154,7 +1154,7 @@ const PianoTilesGame: React.FC = () => {
               </div>
             </Link>
           </div>{" "}
-          <p className="text-white text-base mt-[65px] mb-5">
+          <p className="text-white text-base mt-[65px]">
             Balance: {balance / BigInt(10 ** 18)}{" "}
             <span className="text-xs">MON</span>
           </p>
@@ -1197,7 +1197,7 @@ const PianoTilesGame: React.FC = () => {
             <button
               onClick={() => handleFundWallet("1")}
               disabled={isProcessing}
-              className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 mx-auto py-2 hover:scale-95 transition-all duration-200 ease-in-out disabled:opacity-50"
+              className="font-bold uppercase text-3xl mt-2.5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 mx-auto py-2 hover:scale-95 transition-all duration-200 ease-in-out disabled:opacity-50"
             >
               {isProcessing ? "Funding..." : "Fund Wallet"}
             </button>
