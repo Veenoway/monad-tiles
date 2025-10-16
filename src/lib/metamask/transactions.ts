@@ -128,29 +128,35 @@ export async function sendUserOperation({
   });
   console.log("currentNonce", nonce);
   // const currentNonce = await smartAccount.getNonce();
-  const { fast: fee } = await pimlicoClient.getUserOperationGasPrice();
   try {
+    const { fast: gasPrice } = await pimlicoClient.getUserOperationGasPrice();
+
+    // Préparer l'appel
+    const calls = [
+      {
+        to,
+        value: parseEther(value),
+        data: data || "0x",
+      },
+    ];
+
+    // Envoyer l'UserOperation
     const userOpHash = await bundlerClient.sendUserOperation({
       account: smartAccount,
-      calls: [
-        {
-          to: to,
-          value: parseEther("0"),
-        },
-      ],
-      ...fee,
+      calls,
+      ...gasPrice, // Spread les prix de gas
     });
 
     console.log("✅ UserOperation envoyée:", userOpHash);
 
     // Attendre la confirmation
     console.log("⏳ Attente de confirmation...");
-    const receipt = await bundlerClient.waitForUserOperationReceipt({
+    const { receipt } = await bundlerClient.waitForUserOperationReceipt({
       hash: userOpHash,
     });
 
-    console.log("✅ Transaction confirmée:", receipt.receipt.transactionHash);
-    return receipt.receipt.transactionHash;
+    console.log("✅ Transaction confirmée:", receipt.transactionHash);
+    return receipt.transactionHash;
   } catch (error: any) {
     console.error("❌ Erreur UserOperation:", error);
     if (error.message.includes("nonce")) {
