@@ -1,8 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/metamask/transactions.ts - VERSION COMPLÈTE FINALE
 
-import { createPimlicoClient } from "permissionless/clients/pimlico";
-import { http, parseEther, type Address, type Hash } from "viem";
+import { parseEther, type Address, type Hash } from "viem";
 import { bundlerClient, publicClient } from "./config";
 
 // ===================================
@@ -104,20 +103,7 @@ export async function sendUserOperation({
   value,
   data,
 }: SendUserOperationParams): Promise<Hash> {
-  const deployed = await isSmartAccountDeployed(smartAccount.address);
-  if (!deployed) {
-    throw new Error("❌ Smart account non déployé");
-  }
-
-  const pimlicoClient = createPimlicoClient({
-    transport: http(
-      `https://api.pimlico.io/v2/10143/rpc?apikey=${process.env.NEXT_PUBLIC_PIMLICO_API_KEY}`
-    ),
-  });
-
   try {
-    const { fast: gasPrice } = await pimlicoClient.getUserOperationGasPrice();
-
     const calls = [
       {
         to,
@@ -126,50 +112,21 @@ export async function sendUserOperation({
       },
     ];
 
-    // Estimer les gas
-    const gasEstimate = await bundlerClient.estimateUserOperationGas({
-      account: smartAccount,
-      calls,
-      ...gasPrice,
-    });
-
-    console.log("⛽ Gas brut estimé:", gasEstimate);
-
-    // 🔥 NETTOYER les champs paymaster
-    const cleanGasEstimate = {
-      callGasLimit: gasEstimate.callGasLimit,
-      verificationGasLimit: gasEstimate.verificationGasLimit,
-      preVerificationGas: gasEstimate.preVerificationGas,
-      // On exclut paymasterPostOpGasLimit et paymasterVerificationGasLimit
-    };
-
-    console.log("⛽ Gas nettoyé:", cleanGasEstimate);
-
-    // Envoyer sans les champs paymaster
     const userOpHash = await bundlerClient.sendUserOperation({
       account: smartAccount,
       calls,
-      ...gasPrice,
-      ...cleanGasEstimate, // ✅ Version nettoyée
     });
 
-    console.log("✅ UserOp envoyée:", userOpHash);
+    console.log("✅ Envoyée:", userOpHash);
 
     const { receipt } = await bundlerClient.waitForUserOperationReceipt({
       hash: userOpHash,
-      timeout: 60000, // 60 secondes max
     });
 
     return receipt.transactionHash;
   } catch (error: any) {
-    console.error("❌ Erreur:", error);
-
-    if (error.message?.includes("nonce")) {
-      const currentNonce = await smartAccount.getNonce();
-      console.error("🔢 Nonce actuel:", currentNonce);
-    }
-
-    throw new Error(`Erreur UserOp: ${error.shortMessage || error.message}`);
+    console.error("❌ Erreur:", error.message);
+    throw error;
   }
 }
 
