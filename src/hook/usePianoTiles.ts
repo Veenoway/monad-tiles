@@ -132,6 +132,11 @@ export function usePianoGasless() {
   };
 
   const payGameFee = useCallback(async () => {
+    if (!address) {
+      setError("Connectez votre wallet");
+      return null;
+    }
+
     if (!smartAccount || !isDeployed) {
       setError(
         "⚠️ Smart account non configuré. Allez dans les paramètres pour le configurer."
@@ -139,23 +144,44 @@ export function usePianoGasless() {
       return null;
     }
 
+    // NOUVEAU : Vérification avant la transaction
+    const playerData = await readContract({
+      address: PIANO_CONTRACT_ADDRESS,
+      abi: PIANO_CONTRACT_ABI,
+      functionName: "players",
+      args: [address],
+    });
+
+    console.log("État du joueur avant paiement:", {
+      registered: playerData.registered,
+      hasPaidFee: playerData.hasPaidFee,
+      txCount: playerData.txCount.toString(),
+    });
+
+    // Si les frais sont déjà payés, on ne fait rien
+    if (playerData.hasPaidFee) {
+      console.log("Les frais de jeu ont déjà été payés");
+      setError("Les frais de jeu ont déjà été payés");
+      return null;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      console.log("💰 Paiement des frais de jeu via Smart Account");
-
       const callData = encodeFunctionData({
         abi: PIANO_CONTRACT_ABI,
         functionName: "payGameFee",
         args: [],
       });
-      const gameFee = BigInt("100000000000000");
+
+      const gameFee = BigInt("100000000000000"); // 0.0001 ether
+
       const txHash = await sendUserOperation({
         smartAccount,
         to: PIANO_CONTRACT_ADDRESS,
-        value: gameFee as unknown as string, // Convertit en wei correctement
-        data: callData, // Ajoutez le callData ici
+        value: gameFee as unknown as string,
+        data: callData,
       });
 
       console.log("✅ Frais de jeu payés:", txHash);
@@ -163,7 +189,7 @@ export function usePianoGasless() {
 
       return txHash;
     } catch (e: any) {
-      console.error("❌ Erreur de paiement:", e);
+      console.error("❌ Erreur complète:", e);
       setError(e.message || "Erreur lors du paiement des frais");
       throw e;
     } finally {
