@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // lib/metamask/transactions.ts - VERSION COMPLÈTE FINALE
 
+import { PIANO_CONTRACT_ABI } from "@/constant/pianoTiles";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
 import { formatEther, http, parseEther, type Address, type Hash } from "viem";
 import { bundlerClient, publicClient } from "./config";
@@ -140,17 +141,18 @@ export async function sendUserOperation({
 
     // ✅ BOOST x2 pour être sûr que ça mine
     const boostedGas = {
-      maxFeePerGas: gasPrice.fast.maxFeePerGas * BigInt(2),
-      maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas * BigInt(2),
+      maxFeePerGas: gasPrice.fast.maxFeePerGas * BigInt(2.5),
+      maxPriorityFeePerGas: gasPrice.fast.maxPriorityFeePerGas * BigInt(2.5),
     };
     console.log("🚀 Gas boosté x2:", boostedGas);
 
     // 4. Préparer les calls
     const calls = [
       {
+        functionName: "click",
+        abi: PIANO_CONTRACT_ABI,
         to,
         value: parseEther(value),
-        data: data || ("0x" as `0x${string}`),
       },
     ];
 
