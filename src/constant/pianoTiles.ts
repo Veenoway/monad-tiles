@@ -1,7 +1,19 @@
 export const PIANO_CONTRACT_ADDRESS =
-  "0x69E2C46b881Fb7dc256bef6C09254e888feb9210";
+  "0xF5A7a8E34738C3e50b300741768De34d29b8FF78";
 
 export const PIANO_CONTRACT_ABI = [
+  {
+    type: "function",
+    name: "click",
+    stateMutability: "nonpayable",
+    inputs: [
+      {
+        name: "_userAddress",
+        type: "address",
+      },
+    ],
+    outputs: [],
+  },
   {
     type: "event",
     name: "Click",

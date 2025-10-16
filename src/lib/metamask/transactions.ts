@@ -157,6 +157,7 @@ export async function sendUserOperation({
 
     const { receipt } = await bundlerClient.waitForUserOperationReceipt({
       hash: userOpHash,
+      timeout: 60000, // 60 secondes max
     });
 
     return receipt.transactionHash;

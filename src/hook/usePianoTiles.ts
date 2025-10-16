@@ -4,12 +4,11 @@ import {
   PIANO_CONTRACT_ADDRESS,
 } from "@/constant/pianoTiles";
 import {
-  checkSmartAccountBalance,
   isSmartAccountDeployed,
   sendUserOperation,
 } from "@/lib/metamask/transactions";
 import { useCallback, useMemo, useState } from "react";
-import { encodeFunctionData, formatEther, parseEther } from "viem";
+import { encodeFunctionData } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 import { useSmartAccount } from "./useSmartAccount";
 
@@ -120,39 +119,20 @@ export function usePianoGasless() {
       return null;
     }
 
-    try {
-      // 1. Vérifier le solde
-      const balance = await checkSmartAccountBalance(smartAccount.address);
-      console.log("💰 Solde SA:", formatEther(balance), "MON");
-
-      if (balance < parseEther("0.002")) {
-        throw new Error("Solde insuffisant");
-      }
-
-      // 2. Encoder le callData NOUS-MÊMES ✅
-      const callData = encodeFunctionData({
+    // 🔥 NE PAS encoder le callData vous-même
+    // Laissez sendUserOperation s'en charger
+    const txHash = await sendUserOperation({
+      smartAccount,
+      to: PIANO_CONTRACT_ADDRESS,
+      value: "0.0001",
+      data: encodeFunctionData({
         abi: PIANO_CONTRACT_ABI,
-        functionName: "payGameFee",
-        args: [],
-      });
+        functionName: "click",
+        args: [smartAccountAddress as `0x${string}`],
+      }),
+    });
 
-      console.log("📝 CallData encodé:", callData);
-
-      // 3. Envoyer avec le callData déjà prêt
-      const txHash = await sendUserOperation({
-        smartAccount,
-        to: PIANO_CONTRACT_ADDRESS,
-        value: "0.0001",
-        data: callData, // ✅ Déjà encodé
-      });
-
-      console.log("✅ Transaction envoyée:", txHash);
-      return txHash;
-    } catch (error) {
-      console.error("❌ Erreur:", error);
-      setError(error instanceof Error ? error.message : "Erreur inconnue");
-      return null;
-    }
+    return txHash;
   };
 
   const payGameFee = useCallback(async () => {
