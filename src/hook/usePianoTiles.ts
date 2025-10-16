@@ -8,7 +8,6 @@ import {
   sendUserOperation,
 } from "@/lib/metamask/transactions";
 import { useCallback, useMemo, useState } from "react";
-import { encodeFunctionData } from "viem";
 import { useAccount, useReadContract } from "wagmi";
 import { useSmartAccount } from "./useSmartAccount";
 
@@ -139,17 +138,10 @@ export function usePianoGasless() {
       const currentNonce = await smartAccount.getNonce();
       console.log("Nonce actuel:", currentNonce);
 
-      const callData = encodeFunctionData({
-        abi: PIANO_CONTRACT_ABI,
-        functionName: "payGameFee",
-        args: [],
-      });
-
       const txHash = await sendUserOperation({
         smartAccount,
         to: PIANO_CONTRACT_ADDRESS,
         value: "0.0001",
-        data: callData,
       });
       return txHash;
     } catch (error) {
@@ -177,17 +169,10 @@ export function usePianoGasless() {
       try {
         console.log("🎹 Soumission score via Smart Account:", finalScore);
 
-        const callData = encodeFunctionData({
-          abi: PIANO_CONTRACT_ABI,
-          functionName: "submitScore",
-          args: [BigInt(Math.floor(finalScore))],
-        });
-
         const txHash = await sendUserOperation({
           smartAccount,
           to: PIANO_CONTRACT_ADDRESS,
           value: "0",
-          data: callData,
         });
 
         console.log("✅ Score enregistré:", txHash);
