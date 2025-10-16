@@ -146,6 +146,7 @@ export async function sendUserOperation({
     };
     console.log("🚀 Gas boosté x2:", boostedGas);
 
+    const currentNonce = await smartAccount.getNonce();
     // 4. Préparer les calls
     const calls = [
       {
@@ -162,6 +163,7 @@ export async function sendUserOperation({
       account: smartAccount,
       calls,
       ...boostedGas,
+      nonce: currentNonce,
     });
 
     console.log("✅ UserOp envoyée:", userOpHash);
