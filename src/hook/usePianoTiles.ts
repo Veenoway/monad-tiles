@@ -142,18 +142,10 @@ export function usePianoGasless() {
       const currentNonce = await smartAccount.getNonce();
       console.log("Nonce actuel:", currentNonce);
 
-      const callData = encodeFunctionData({
-        abi: PIANO_CONTRACT_ABI,
-        functionName: "payGameFee",
-        args: [],
-      });
-
       const txHash = await sendUserOperation({
         smartAccount,
         to: PIANO_CONTRACT_ADDRESS,
         value: "100000000000000", // 0.0001 ether
-        data: callData,
-        nonce: currentNonce + BigInt(1), // Incrémentation explicite du nonce
       });
 
       return txHash;

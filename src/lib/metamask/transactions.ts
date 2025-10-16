@@ -138,7 +138,6 @@ export async function sendUserOperation({
           data: data as unknown as `0x${string}`,
         },
       ],
-      nonce: nonce,
       ...fee,
     });
 
