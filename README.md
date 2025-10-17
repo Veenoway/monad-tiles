@@ -1,36 +1,109 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Monad Tiles
+
+**Monad Tiles** is a Farcaster mini app that brings gaming directly into your social feed. Play, compete, and earn — all without leaving Farcaster.
+
+Now featuring **MetaMask Smart Accounts** for seamless onboarding and enhanced user experience.
+
+---
+
+## Features
+
+* **Play in Farcaster** – native mini app integration
+* **MetaMask Smart Accounts** – no seed phrases, instant onboarding
+* **Mobile-first** – optimized for Farcaster mobile experience
+
+---
+
+## What's New: MetaMask Smart Accounts
+
+We just integrated **MetaMask Smart Accounts**, enabling:
+
+* ✅ **Instant wallet creation** – users can start playing immediately
+* ✅ **No seed phrases** – simplified onboarding with account abstraction
+* ✅ **Batch transactions** – multiple game actions in a single transaction
+* ✅ **Better security** – smart contract-based account protection
+
+---
+
+## Tech Stack
+
+| Layer     | Technology                            |
+| --------- | ------------------------------------- |
+| Frontend  | Next.js 15, TypeScript, Tailwind CSS  |
+| Wallet    | MetaMask SDK, Smart Accounts          |
+| Backend   | Next.js API Routes                    |
+| Chain     | Monad                                 |
+| Mini App  | Farcaster Frames/Mini Apps            |
+
+---
+
+## 📦 Project Structure
+```
+./
+├── src/
+│   ├── app/              # Next.js 15 app directory
+│   ├── components/       # React components
+│   ├── hooks/            # Custom hooks (MetaMask, game logic)
+│   └── lib/              # Utilities and helpers
+│
+├── public/               # Static assets
+├── package.json
+└── README.md
+```
+
+---
 
 ## Getting Started
 
-First, run the development server:
+### 1. Clone the Repository
+```bash
+git clone [your-repo-url]
+cd monad-tiles
+```
 
+### 2. Install Dependencies
+```bash
+npm install
+# or
+bun install
+```
+
+### 3. Run Development Server
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
 # or
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## How to Play
 
-## Learn More
+1. Open Monad Tiles in Farcaster
+2. Connect with MetaMask Smart Account (no seed phrase needed!)
+3. Start playing
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## MetaMask Smart Accounts Integration
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Key implementation details:
 
-## Deploy on Vercel
+* **SDK Integration** – MetaMask SDK for wallet connection
+* **Smart Account Creation** – automatic account creation on first play
+* **Account Abstraction** – simplified UX without manual key management
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## License
+
+MIT © 2025 Novee
+
+---
+
+## Links
+
+* [Play on Farcaster](https://farcaster.xyz/miniapps/Mxut1X1kcWLu/monad-tiles)
+* [Twitter](https://x.com/Novee_VeenoX)
