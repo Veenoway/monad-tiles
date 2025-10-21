@@ -494,14 +494,21 @@ const PianoTilesGame: React.FC = () => {
     setTimeout(() => setNotification(null), 3000);
   };
 
+  const [isGameOverLoading, setIsGameOverLoading] = useState(false);
+
   const handleGameOver = useCallback(async () => {
+    setIsGameOverLoading(true);
     setIsPlaying(false);
     if (score > 0 && address) {
       try {
-        await submitScore(score);
+        const txHash = await submitScore(score);
+        if (txHash) {
+          setIsGameOverLoading(false);
+        }
       } catch (error) {
         console.error("Error submitting score:", error);
         showNotification("Failed to submit score.", "error");
+        setIsGameOverLoading(false);
       }
     }
   }, [score, submitScore, address]);
@@ -953,7 +960,7 @@ const PianoTilesGame: React.FC = () => {
             </p>
             <p className="text-6xl text-yellow-300 mt-2 font-bold">{txCount}</p>
           </div>
-          {isSubmittingScore && (
+          {isGameOverLoading && (
             <div className="mt-4 absolute flex items-center w-fit -bottom-10">
               <div className="animate-spin rounded-full h-5 w-5 border-t-2 border-b-2 border-[#a1055c]"></div>
               <p className="text-white ml-4">Submitting score...</p>
@@ -965,7 +972,7 @@ const PianoTilesGame: React.FC = () => {
           <button
             onClick={() => setShowSettings(true)}
             className="px-3 py-1.5 bg-[#a1055c] text-3xl h-[50px] uppercase text-white rounded-md"
-            disabled={isSubmittingScore}
+            disabled={isGameOverLoading}
           >
             <IoSettingsSharp />
           </button>
@@ -1186,7 +1193,6 @@ const PianoTilesGame: React.FC = () => {
                 }
                 setShowLeaderboard(true);
               }}
-              disabled={true}
               className="px-3 py-1.5 bg-[#a1055c] text-4xl uppercase text-white rounded-md disabled:opacity-50"
             >
               <FaRankingStar />
