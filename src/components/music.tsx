@@ -216,6 +216,13 @@ const PianoTilesGame: React.FC = () => {
 
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [isProcessingPayment] = useState(false);
+  const [highestScore, setHighestScore] = useState<number>(0);
+  useEffect(() => {
+    const highestScore = localStorage.getItem("highestScore");
+    if (highestScore) {
+      setHighestScore(Number(highestScore));
+    }
+  }, []);
 
   const [notification, setNotification] = useState<{
     message: string;
@@ -500,6 +507,11 @@ const PianoTilesGame: React.FC = () => {
     if (score > 0 && address) {
       try {
         const txHash = await submitScore(score);
+        const highestScore = localStorage.getItem("score");
+        if (Number(highestScore) < score || !highestScore) {
+          localStorage.setItem("highestScore", score.toString());
+          setHighestScore(score);
+        }
         if (txHash) {
           setIsGameOverLoading(false);
         }
@@ -954,9 +966,11 @@ const PianoTilesGame: React.FC = () => {
           </div>
           <div className="flex flex-col items-center">
             <p className="text-xl text-white mb-0 leading-[18px] uppercase">
-              Txns
+              Highest Score
             </p>
-            <p className="text-6xl text-yellow-300 mt-2 font-bold">{txCount}</p>
+            <p className="text-6xl text-yellow-300 mt-2 font-bold">
+              {highestScore?.toString()}
+            </p>
           </div>
           {isGameOverLoading && (
             <div className="mt-4 absolute flex items-center w-fit -bottom-10">
@@ -1159,7 +1173,8 @@ const PianoTilesGame: React.FC = () => {
             </Link>
           </div>{" "}
           <p className="text-white text-base mt-[65px]">
-            Balance: {formatEther(balance)} <span className="text-xs">MON</span>
+            Balance: {formatEther(balance)?.toFixed(2)}{" "}
+            <span className="text-xs">MON</span>
           </p>
           <div className="flex gap-4 mt-5">
             <button
