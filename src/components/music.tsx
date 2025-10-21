@@ -189,7 +189,7 @@ const PianoTilesGame: React.FC = () => {
   const [showLeaderboard, setShowLeaderboard] = useState<boolean>(false);
   const [scoreMultiplier, setScoreMultiplier] = useState<number>(1);
   const [currentBonusImage, setCurrentBonusImage] = useState<string>("");
-  const [setTxCount] = useState<number>(0);
+  const [txCount, setTxCount] = useState<number>(0);
 
   const animTimerRef = useRef<NodeJS.Timeout | null>(null);
   const accelTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -303,6 +303,8 @@ const PianoTilesGame: React.FC = () => {
       return newMuted;
     });
   }, []);
+
+  console.log("txCount", txCount);
 
   useEffect(() => {
     if (bgMusicRef.current) bgMusicRef.current.pause();
