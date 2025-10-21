@@ -508,7 +508,9 @@ const PianoTilesGame: React.FC = () => {
     setIsPlaying(false);
     if (score > 0 && address) {
       try {
-        const txHash = await submitScore(score);
+        const txHash = await submitScore(score, () =>
+          setIsGameOverLoading(false)
+        );
         const highestScore = localStorage.getItem("score");
         console.log("highestScore", highestScore);
         console.log("score", score);
@@ -519,7 +521,6 @@ const PianoTilesGame: React.FC = () => {
         if (!highestScore || Number(highestScore) < score) {
           localStorage.setItem("highestScore", score.toString());
           setHighestScore(score);
-          setIsGameOverLoading(false);
         }
         if (txHash) {
           setIsGameOverLoading(false);

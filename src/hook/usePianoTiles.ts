@@ -133,7 +133,7 @@ export function usePianoGasless() {
   }, [smartAccount, isDeployed]);
 
   const submitScore = useCallback(
-    async (finalScore: number) => {
+    async (finalScore: number, callback: () => void) => {
       if (!smartAccount || !isDeployed) {
         setError(
           "⚠️ Smart account non configuré. Allez dans les paramètres pour le configurer."
@@ -152,7 +152,7 @@ export function usePianoGasless() {
           to: PIANO_CONTRACT_ADDRESS,
           value: "0",
         });
-
+        callback();
         console.log("✅ Score enregistré:", txHash);
         setTxHashes((prev) => [...prev, txHash]);
 
