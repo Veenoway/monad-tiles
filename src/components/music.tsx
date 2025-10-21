@@ -1145,7 +1145,7 @@ const PianoTilesGame: React.FC = () => {
           {notification.message}
         </div>
       )}
-      {((!smartAccount && isConnected) || !deployed) && (
+      {((!smartAccount && isConnected) || (!deployed && isConnected)) && (
         <SmartAccountManager
           balance={balance}
           deployed={deployed}
