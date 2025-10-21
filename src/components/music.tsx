@@ -1093,7 +1093,6 @@ const PianoTilesGame: React.FC = () => {
     refresh();
   }, [smartAccountAddress]);
 
-  const isReady = deployed && balance > BigInt(0);
   const { data: walletClient } = useWalletClient();
   const [isProcessing, setIsProcessing] = useState(false);
 
