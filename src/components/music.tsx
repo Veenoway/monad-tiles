@@ -17,7 +17,7 @@ import {
   fundSmartAccount,
   isSmartAccountDeployed,
 } from "@/lib/metamask/transactions";
-import { parseEther } from "viem";
+import { formatEther, parseEther } from "viem";
 import { SmartAccountManager } from "./smartAccountDemo";
 
 interface Tile {
@@ -211,8 +211,6 @@ const PianoTilesGame: React.FC = () => {
   const specialBonusAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const [clickedTile, setClickedTile] = useState<Tile | null>(null);
-
-  const [isSubmittingScore] = useState<boolean>(false);
 
   const [gameStarted, setGameStarted] = useState(false);
 
@@ -1161,8 +1159,7 @@ const PianoTilesGame: React.FC = () => {
             </Link>
           </div>{" "}
           <p className="text-white text-base mt-[65px]">
-            Balance: {balance / BigInt(10 ** 18)}{" "}
-            <span className="text-xs">MON</span>
+            Balance: {formatEther(balance)} <span className="text-xs">MON</span>
           </p>
           <div className="flex gap-4 mt-5">
             <button
