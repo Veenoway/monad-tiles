@@ -136,6 +136,7 @@ const PianoTilesGame: React.FC = () => {
     submitScore,
     startGameWithGasless,
     error,
+    payGameFee,
   } = usePianoGasless();
   const { smartAccount, smartAccountAddress } = useSmartAccount();
   const address = smartAccount?.address;
@@ -515,7 +516,11 @@ const PianoTilesGame: React.FC = () => {
       return;
     }
 
-    // await startGameWithGasless();
+    const txHash = await payGameFee();
+    console.log("txHash", txHash);
+    if (!txHash) {
+      return;
+    }
 
     try {
       console.log("🎮 Starting game...");
