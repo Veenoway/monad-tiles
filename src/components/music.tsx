@@ -1116,6 +1116,8 @@ const PianoTilesGame: React.FC = () => {
     }
   };
 
+  console.log("smartAccount", smartAccount);
+
   return (
     <div
       className="sm:rounded-2xl relative overflow-hidden shadow-lg shadow-[rgba(0,0,0,0.2)] mx-auto lg:mt-[60px]"
