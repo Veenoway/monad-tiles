@@ -33,15 +33,10 @@ export function usePianoGasless() {
   const [txHashes, setTxHashes] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  // Compteurs locaux pendant le jeu
   const [localClicks, setLocalClicks] = useState(0);
   const [localScore, setLocalScore] = useState(0);
 
   const pageSize = 10;
-
-  // ===================================
-  // Lectures du contrat
-  // ===================================
 
   const { data: totalPlayers } = useReadContract({
     address: PIANO_CONTRACT_ADDRESS,
@@ -91,26 +86,13 @@ export function usePianoGasless() {
     },
   });
 
-  // ===================================
-  // CLICK LOCAL (instant, pas de blockchain)
-  // ===================================
-
   const click = useCallback(() => {
     setLocalClicks((prev) => prev + 1);
-    console.log("🎹 Click local");
   }, []);
-
-  // ===================================
-  // UPDATE SCORE LOCAL
-  // ===================================
 
   const updateLocalScore = useCallback((newScore: number) => {
     setLocalScore(newScore);
   }, []);
-
-  // ===================================
-  // SUBMIT SCORE - Smart Account (UNE signature)
-  // ===================================
 
   const startGameWithGasless = async () => {
     if (!smartAccount || !isDeployed) {
@@ -134,7 +116,6 @@ export function usePianoGasless() {
     }
 
     try {
-      // Récupérer le nonce actuel
       const currentNonce = await smartAccount.getNonce();
       console.log("Nonce actuel:", currentNonce);
 
@@ -151,9 +132,6 @@ export function usePianoGasless() {
     }
   }, [smartAccount, isDeployed]);
 
-  // ===================================
-  // SUBMIT SCORE - Smart Account (UNE signature)
-  // ===================================
   const submitScore = useCallback(
     async (finalScore: number) => {
       if (!smartAccount || !isDeployed) {
@@ -196,10 +174,6 @@ export function usePianoGasless() {
     [address, smartAccount, isDeployed, refetchLeaderboard, refetchGlobalCount]
   );
 
-  // ===================================
-  // Pagination
-  // ===================================
-
   const setPage = useCallback(
     (page: number) => {
       if (page >= 0 && page < totalPages) {
@@ -223,10 +197,6 @@ export function usePianoGasless() {
       setCurrentPage((prev) => prev - 1);
     }
   }, [canGoToPreviousPage]);
-
-  // ===================================
-  // Formatage des données
-  // ===================================
 
   const formattedPlayerStats: PlayerStats[] = useMemo(() => {
     if (!leaderboardData || !Array.isArray(leaderboardData[0])) return [];
@@ -259,33 +229,24 @@ export function usePianoGasless() {
   }, [leaderboardData]);
 
   return {
-    // Actions de jeu (local)
-    click, // Instant
-    updateLocalScore, // Instant
-
-    // Action blockchain (une signature)
-    submitScore, // Smart Account
-
-    // État
+    click,
+    updateLocalScore,
+    submitScore,
     isLoading,
     error,
     txHashes,
 
-    // Données locales
     localClicks,
     localScore,
 
-    // Smart Account status
     smartAccountReady: !!smartAccount && isDeployed,
     smartAccountAddress,
 
-    // Données blockchain
     playerStats: formattedPlayerStats,
     leaderboardFormatted,
     currentGlobalCount,
     userRank: userRank as bigint,
 
-    // Pagination
     currentPage,
     totalPages,
     pageSize,

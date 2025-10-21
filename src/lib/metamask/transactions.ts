@@ -32,18 +32,18 @@ export async function fundSmartAccount(
   smartAccountAddress: Address,
   amount: string
 ): Promise<Hash> {
-  console.log(`💰 Envoi de ${amount} MONAD au smart account...`);
+  console.log(`Envoi de ${amount} MONAD au smart account...`);
 
   const hash = await walletClient.sendTransaction({
     to: smartAccountAddress,
     value: parseEther(amount),
   });
 
-  console.log("✅ Transaction de financement envoyée:", hash);
+  console.log("Transaction de financement envoyée:", hash);
 
   // Attendre la confirmation
   await publicClient.waitForTransactionReceipt({ hash });
-  console.log("✅ Financement confirmé");
+  console.log("Financement confirmé");
 
   return hash;
 }
@@ -61,7 +61,7 @@ export async function deploySmartAccount(
   // Vérifier si déjà déployé
   const alreadyDeployed = await isSmartAccountDeployed(smartAccount.address);
   if (alreadyDeployed) {
-    console.log("✅ Smart account déjà déployé");
+    console.log("Smart account déjà déployé");
     return "0x" as Hash; // Déjà déployé
   }
 
@@ -78,11 +78,11 @@ export async function deploySmartAccount(
     value: BigInt(0),
   });
 
-  console.log("✅ Transaction de déploiement envoyée:", hash);
+  console.log("Transaction de déploiement envoyée:", hash);
 
   // Attendre la confirmation
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
-  console.log("✅ Smart account déployé à:", smartAccount.address);
+  console.log("Smart account déployé à:", smartAccount.address);
 
   return receipt.transactionHash;
 }
@@ -108,14 +108,14 @@ export async function sendUserOperation({
 
   const deployed = await isSmartAccountDeployed(smartAccount.address);
   if (!deployed) {
-    throw new Error("❌ Smart account non déployé");
+    throw new Error("Smart account non déployé");
   }
 
   const balance = await publicClient.getBalance({
     address: smartAccount.address,
   });
 
-  console.log("💰 Solde SA:", formatEther(balance), "MON");
+  console.log("Solde SA:", formatEther(balance), "MON");
 
   if (balance < parseEther("0.001")) {
     throw new Error(
@@ -152,7 +152,7 @@ export async function sendUserOperation({
     ];
 
     console.log("📤 Envoi UserOperation...");
-    console.log("📝 Calls:", calls);
+    console.log("Calls:", calls);
 
     const userOpHash = await bundlerClient.sendUserOperation({
       account: smartAccount,
@@ -160,7 +160,7 @@ export async function sendUserOperation({
       ...boostedGas,
     });
 
-    console.log("✅ UserOp envoyée:", userOpHash);
+    console.log("UserOp envoyée:", userOpHash);
     console.log("🔗 Hash:", userOpHash);
 
     console.log("⏳ Attente confirmation (max 2 minutes)...");
@@ -173,17 +173,17 @@ export async function sendUserOperation({
     });
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`✅ CONFIRMÉE en ${duration}s !`);
-    console.log("📝 Transaction hash:", receipt.transactionHash);
-    console.log("🧱 Block:", receipt.blockNumber);
+    console.log(`CONFIRMÉE en ${duration}s !`);
+    console.log("Transaction hash:", receipt.transactionHash);
+    console.log("Block:", receipt.blockNumber);
 
     return receipt.transactionHash;
   } catch (error: any) {
-    console.error("❌ Erreur complète:", error);
+    console.error("Erreur complète:", error);
 
     if (error.message?.includes("timeout") || error.name === "TimeoutError") {
       throw new Error(
-        "⏱️ Transaction timeout. Le réseau est peut-être surchargé. Réessayez dans 2 minutes."
+        "Transaction timeout. Le réseau est peut-être surchargé. Réessayez dans 2 minutes."
       );
     }
 
@@ -213,13 +213,13 @@ export async function diagnoseSmartAccount(smartAccountAddress: Address) {
     // 2. Déploiement
     const code = await publicClient.getCode({ address: smartAccountAddress });
     const deployed = code !== undefined && code !== "0x";
-    console.log("📦 Déployé:", deployed ? "✅ OUI" : "❌ NON");
+    console.log("📦 Déployé:", deployed ? "OUI" : "NON");
 
     // 3. Solde
     const balance = await publicClient.getBalance({
       address: smartAccountAddress,
     });
-    console.log("💰 Solde:", formatEther(balance), "MON");
+    console.log("Solde:", formatEther(balance), "MON");
 
     if (balance < parseEther("0.001")) {
       console.log("⚠️  ATTENTION: Solde faible ! Ajoutez au moins 0.01 MON");
@@ -252,7 +252,7 @@ export async function diagnoseSmartAccount(smartAccountAddress: Address) {
     console.log("🚪 Entry Points:", entryPoints);
 
     console.log("\n═══════════════════════════════════");
-    console.log("✅ DIAGNOSTIC TERMINÉ");
+    console.log("DIAGNOSTIC TERMINÉ");
     console.log("═══════════════════════════════════\n");
 
     return {
@@ -261,7 +261,7 @@ export async function diagnoseSmartAccount(smartAccountAddress: Address) {
       hasEnoughFunds: balance >= parseEther("0.001"),
     };
   } catch (error) {
-    console.error("❌ Erreur diagnostic:", error);
+    console.error("Erreur diagnostic:", error);
     console.log("═══════════════════════════════════\n");
     throw error;
   }
@@ -275,10 +275,10 @@ export async function testBundlerConnection() {
     console.log("🧪 Test de connexion bundler...");
 
     const chainId = await bundlerClient.chain.id;
-    console.log("✅ Chain ID:", chainId);
+    console.log("Chain ID:", chainId);
 
     const entryPoints = await bundlerClient.getSupportedEntryPoints();
-    console.log("✅ EntryPoints:", entryPoints);
+    console.log("EntryPoints:", entryPoints);
 
     return {
       success: true,
@@ -286,7 +286,7 @@ export async function testBundlerConnection() {
       entryPoints,
     };
   } catch (error) {
-    console.error("❌ Erreur test bundler:", error);
+    console.error("Erreur test bundler:", error);
     return {
       success: false,
       error,
