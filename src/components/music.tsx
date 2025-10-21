@@ -525,19 +525,24 @@ const PianoTilesGame: React.FC = () => {
     }
   }, [score, submitScore, address]);
 
+  const [isInitialisingGame, setIsInitialisingGame] = useState(false);
+
   const startGame = useCallback(async () => {
+    setIsInitialisingGame(true);
     if (!isConnected && !smartAccount) {
       if (isEthProviderAvailable) {
         connect({ connector: farcasterFrame() });
       } else {
         showNotification("Wallet connection only via Warpcast", "error");
       }
+      setIsInitialisingGame(false);
       return;
     }
 
     const txHash = await payGameFee();
     console.log("txHash", txHash);
     if (!txHash) {
+      setIsInitialisingGame(false);
       return;
     }
 
@@ -551,9 +556,11 @@ const PianoTilesGame: React.FC = () => {
       setRows([]);
       setTileSpeed(computedInitialSpeed);
       setSpawnInterval(600);
+      setIsInitialisingGame(false);
     } catch (error) {
       console.error("❌ Error starting game:", error);
       showNotification("Failed to start game. Please try again.", "error");
+      setIsInitialisingGame(false);
     }
   }, [
     isConnected,
@@ -994,8 +1001,9 @@ const PianoTilesGame: React.FC = () => {
             <button
               onClick={startGame}
               className={`font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out `}
+              disabled={isInitialisingGame}
             >
-              REPLAY
+              {isInitialisingGame ? "Initialising..." : "REPLAY"}
             </button>
             <button
               className="px-3 py-1.5 bg-[#a1055c] text-4xl h-[50px] uppercase text-white rounded-md"
@@ -1195,8 +1203,13 @@ const PianoTilesGame: React.FC = () => {
               <button
                 onClick={startGame}
                 className="font-bold uppercase text-3xl -mt-5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 py-2 hover:scale-95 transition-all duration-200 ease-in-out"
+                disabled={isInitialisingGame}
               >
-                {!isConnected ? "Connect Wallet" : "Start"}
+                {!isConnected
+                  ? "Connect Wallet"
+                  : isInitialisingGame
+                  ? "Initialising..."
+                  : "Start"}
               </button>
             </div>
             <button
