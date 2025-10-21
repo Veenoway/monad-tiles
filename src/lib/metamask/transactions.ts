@@ -4,6 +4,7 @@
 import { PIANO_CONTRACT_ABI } from "@/constant/pianoTiles";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
 import { formatEther, http, parseEther, type Address, type Hash } from "viem";
+import { monadTestnet } from "../wagmi/config";
 import { bundlerClient, publicClient } from "./config";
 
 // ===================================
@@ -33,6 +34,15 @@ export async function fundSmartAccount(
   amount: string
 ): Promise<Hash> {
   console.log(`Envoi de ${amount} MONAD au smart account...`);
+
+  const currentChain = await walletClient.getChainId();
+
+  console.log("currentChain", currentChain);
+  if (currentChain !== monadTestnet.id) {
+    console.log("Switching to Monad Testnet...");
+    walletClient.switchChain({ chainId: monadTestnet.id });
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
 
   const hash = await walletClient.sendTransaction({
     to: smartAccountAddress,
