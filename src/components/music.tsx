@@ -9,7 +9,7 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { FaRankingStar } from "react-icons/fa6";
 import { GoMute, GoUnmute } from "react-icons/go";
 import { IoSettingsSharp } from "react-icons/io5";
-import { monadTestnet } from "viem/chains";
+import { base, monadTestnet } from "viem/chains";
 import { useAccount, useConnect, useSwitchChain, useWalletClient } from "wagmi";
 
 import {
@@ -1068,6 +1068,8 @@ const PianoTilesGame: React.FC = () => {
     );
   };
 
+  const { switchChainAsync } = useSwitchChain();
+
   const [balance, setBalance] = useState(BigInt(0));
   const [deployed, setDeployed] = useState(false);
 
@@ -1102,6 +1104,15 @@ const PianoTilesGame: React.FC = () => {
     setIsProcessing(true);
 
     try {
+      const currentChain = await walletClient.getChainId();
+
+      if (currentChain !== monadTestnet.id) {
+        console.log("Switching to Base...");
+        await switchChainAsync({ chainId: base.id });
+
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+
       await fundSmartAccount(walletClient, smartAccountAddress, amount);
 
       const result = await refresh();
