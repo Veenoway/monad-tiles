@@ -1117,6 +1117,11 @@ const PianoTilesGame: React.FC = () => {
   };
 
   console.log("smartAccount", smartAccount);
+  console.log("isConnected", isConnected);
+  console.log("address", address);
+  console.log("smartAccountAddress", smartAccountAddress);
+  console.log("deployed", deployed);
+  console.log("balance", balance);
 
   return (
     <div
@@ -1140,7 +1145,7 @@ const PianoTilesGame: React.FC = () => {
           {notification.message}
         </div>
       )}
-      {!smartAccount && address && (
+      {!smartAccount && isConnected && (
         <SmartAccountManager
           balance={balance}
           deployed={deployed}
