@@ -189,7 +189,7 @@ const PianoTilesGame: React.FC = () => {
   const [showLeaderboard, setShowLeaderboard] = useState<boolean>(false);
   const [scoreMultiplier, setScoreMultiplier] = useState<number>(1);
   const [currentBonusImage, setCurrentBonusImage] = useState<string>("");
-  const [txCount, setTxCount] = useState<number>(0);
+  const [setTxCount] = useState<number>(0);
 
   const animTimerRef = useRef<NodeJS.Timeout | null>(null);
   const accelTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -1173,7 +1173,7 @@ const PianoTilesGame: React.FC = () => {
             </Link>
           </div>{" "}
           <p className="text-white text-base mt-[65px]">
-            Balance: {formatEther(balance)?.toFixed(2)}{" "}
+            Balance: {formatEther(balance) || 0}{" "}
             <span className="text-xs">MON</span>
           </p>
           <div className="flex gap-4 mt-5">
@@ -1227,7 +1227,7 @@ const PianoTilesGame: React.FC = () => {
         <div className="flex flex-col items-center">
           <p className="text-lg text-cyan-300 mb-0 leading-[18px]">
             {/* Best Score */}
-            GL HF
+            {highestScore?.toString()}
           </p>
           {/* <p className="text-2xl text-white font-bold mt-0">
             {Number((currentGlobalCount as [bigint])?.[0] as bigint) || 0}
