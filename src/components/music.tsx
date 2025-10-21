@@ -1139,7 +1139,7 @@ const PianoTilesGame: React.FC = () => {
           {notification.message}
         </div>
       )}
-      {!isReady && address && (
+      {!smartAccount && address && (
         <SmartAccountManager
           balance={balance}
           deployed={deployed}
