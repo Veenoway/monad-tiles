@@ -4,10 +4,10 @@
 import { PIANO_CONTRACT_ABI } from "@/constant/pianoTiles";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
 import {
-  createWalletClient,
   formatEther,
   http,
   parseEther,
+  SendTransactionParameters,
   type Address,
   type Hash,
 } from "viem";
@@ -43,38 +43,21 @@ export async function fundSmartAccount(
   console.log(`Envoi de ${amount} MONAD au smart account...`);
 
   const currentChain = await walletClient.getChainId();
-
-  console.log("currentChain", currentChain);
   if (currentChain !== monadTestnet.id) {
     console.log("Switching to Monad Testnet...");
     walletClient.switchChain({ chainId: monadTestnet.id });
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
-  const monadWalletClient = createWalletClient({
-    account: walletClient.account,
-    chain: monadTestnet,
-    transport: http(
-      "https://monad-testnet.blockvision.org/v1/31Ihx9ZHjswZZld678DwIAer7H9"
-    ),
-  });
-
-  // 3. Envoyer avec le bon client
-  const hash = await monadWalletClient.sendTransaction({
-    account: walletClient.account?.address,
+  const hash = await walletClient.sendTransaction({
     to: smartAccountAddress,
-    value: parseEther(amount),
-  });
+    value: BigInt(amount) / BigInt(10 ** 18),
+  } as SendTransactionParameters);
 
   console.log("Transaction de financement envoyée:", hash);
 
-  // 4. Attendre la confirmation
-  await publicClient.waitForTransactionReceipt({
-    hash,
-    timeout: 60000,
-  });
-
-  console.log("Transaction de financement envoyée:", hash);
+  await publicClient.waitForTransactionReceipt({ hash });
+  console.log("Financement confirmé");
 
   return hash;
 }

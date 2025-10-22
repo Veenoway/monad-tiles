@@ -8,7 +8,9 @@ import { monadTestnet } from "../wagmi/config";
 
 export const publicClient = createPublicClient({
   chain: monadTestnet,
-  transport: http(),
+  transport: http(
+    "https://monad-testnet.blockvision.org/v1/31Ihx9ZHjswZZld678DwIAer7H9"
+  ),
 });
 
 export function createWalletClientFromProvider(provider: any) {
