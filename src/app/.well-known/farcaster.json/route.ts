@@ -24,6 +24,7 @@ export async function GET() {
       splashImageUrl: `${appUrl}/pfp-port.png`,
       splashBackgroundColor: "#190e59",
       disableNativeGestures: true,
+      allowedOrigins: [`https://monadtiles.xyz/`],
       allowFullscreen: true,
     },
   };
