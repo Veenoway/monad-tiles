@@ -3,7 +3,6 @@ import {
   Implementation,
   toMetaMaskSmartAccount,
 } from "@metamask/delegation-toolkit";
-import { toSimpleSmartAccount } from "permissionless/accounts";
 import { createWalletClient, custom, type Address } from "viem";
 import { monadTestnet } from "../wagmi/config";
 import { publicClient } from "./config";
@@ -14,57 +13,61 @@ export async function createHybridSmartAccount(
 ) {
   const isFarcaster = provider.isFarcaster || provider.isFrameProvider;
 
+  console.log("🔍 Provider:", {
+    isFarcaster,
+    isMetaMask: provider.isMetaMask,
+    providerKeys: Object.keys(provider),
+  });
+
+  // Pour Farcaster : demander TOUTES les permissions avant de créer le wallet
+  if (isFarcaster) {
+    console.log("🟣 Configuration Farcaster...");
+
+    try {
+      // Demander les permissions d'abord
+      await provider.request({
+        method: "wallet_requestPermissions",
+        params: [
+          {
+            eth_accounts: {},
+          },
+        ],
+      });
+
+      console.log("✅ Permissions Farcaster accordées");
+    } catch (error: any) {
+      console.log("⚠️ Permission déjà accordée ou refusée:", error.message);
+    }
+  }
+
+  // Forcer la connexion des comptes
+  const accounts = await provider.request({
+    method: "eth_requestAccounts",
+  });
+
+  console.log("✅ Comptes disponibles:", accounts);
+
   const walletClient = createWalletClient({
     account: ownerAddress,
     chain: monadTestnet,
     transport: custom(provider),
   });
 
-  if (isFarcaster) {
-    console.log("🟣 Création Smart Account compatible Farcaster...");
-
-    // Utiliser un compte local basé sur le walletClient
-    const localAccount = {
-      address: ownerAddress,
-      async signMessage({ message }: any) {
-        return await walletClient.signMessage({
-          account: ownerAddress,
-          message,
-        });
-      },
-      async signTransaction(tx: any) {
-        return await walletClient.signTransaction({
-          account: ownerAddress,
-          ...tx,
-        });
-      },
-      async signTypedData(params: any) {
-        return await walletClient.signTypedData({
-          account: ownerAddress,
-          ...params,
-        });
-      },
-    };
-
-    const smartAccount = await toSimpleSmartAccount({
-      client: publicClient,
-      owner: localAccount as any, // Force le type
-      entryPoint: {
-        address: "0x0000000071727De22E5E9d8BAf0edAc6f37da032",
-        version: "0.7",
-      },
-    });
-
-    return smartAccount;
-  }
+  // Utiliser MetaMask Smart Account pour TOUS les providers
+  // car il supporte l'Implementation.Hybrid qui est plus permissif
+  console.log("📦 Création du Smart Account Hybrid...");
 
   const smartAccount = await toMetaMaskSmartAccount({
     client: publicClient,
     implementation: Implementation.Hybrid,
     deployParams: [ownerAddress, [], [], []],
     deploySalt: "0x",
-    signer: { walletClient },
+    signer: {
+      walletClient,
+    },
   });
+
+  console.log("✅ Smart Account créé:", smartAccount.address);
 
   return smartAccount;
 }
