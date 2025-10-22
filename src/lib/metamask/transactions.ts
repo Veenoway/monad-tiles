@@ -3,7 +3,14 @@
 
 import { PIANO_CONTRACT_ABI } from "@/constant/pianoTiles";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
-import { formatEther, http, parseEther, type Address, type Hash } from "viem";
+import {
+  createWalletClient,
+  formatEther,
+  http,
+  parseEther,
+  type Address,
+  type Hash,
+} from "viem";
 import { monadTestnet } from "../wagmi/config";
 import { bundlerClient, publicClient } from "./config";
 
@@ -44,16 +51,28 @@ export async function fundSmartAccount(
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
 
-  const hash = await walletClient.sendTransaction({
+  const monadWalletClient = createWalletClient({
+    account: walletClient.account,
+    chain: monadTestnet,
+    transport: http("https://monad-testnet.drpc.org"),
+  });
+
+  // 3. Envoyer avec le bon client
+  const hash = await monadWalletClient.sendTransaction({
+    account: walletClient.account?.address,
     to: smartAccountAddress,
     value: parseEther(amount),
   });
 
   console.log("Transaction de financement envoyée:", hash);
 
-  // Attendre la confirmation
-  await publicClient.waitForTransactionReceipt({ hash });
-  console.log("Financement confirmé");
+  // 4. Attendre la confirmation
+  await publicClient.waitForTransactionReceipt({
+    hash,
+    timeout: 60000,
+  });
+
+  console.log("Transaction de financement envoyée:", hash);
 
   return hash;
 }

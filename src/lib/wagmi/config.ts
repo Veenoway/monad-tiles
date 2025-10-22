@@ -13,14 +13,10 @@ export const monadTestnet = {
   },
   rpcUrls: {
     default: {
-      http: [
-        "https://monad-testnet.blockvision.org/v1/31Ihx9ZHjswZZld678DwIAer7H9",
-      ],
+      http: ["https://monad-testnet.drpc.org"],
     },
     public: {
-      http: [
-        "https://monad-testnet.blockvision.org/v1/31Ihx9ZHjswZZld678DwIAer7H9",
-      ],
+      http: ["https://monad-testnet.drpc.org"],
     },
   },
   blockExplorers: {
