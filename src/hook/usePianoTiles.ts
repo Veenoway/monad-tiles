@@ -8,7 +8,7 @@ import {
   sendUserOperation,
 } from "@/lib/metamask/transactions";
 import { useCallback, useMemo, useState } from "react";
-import { useAccount, useReadContract, useWalletClient } from "wagmi";
+import { useAccount, useReadContract } from "wagmi";
 import { useSmartAccount } from "./useSmartAccount";
 
 type PlayerStats = {
@@ -23,7 +23,6 @@ type LeaderboardEntry = [string, number, number];
 export function usePianoGasless() {
   const { address } = useAccount();
   const { smartAccount, smartAccountAddress } = useSmartAccount();
-  const { data: walletClient } = useWalletClient();
 
   const isDeployed = useMemo(() => {
     return isSmartAccountDeployed(smartAccount?.address);
@@ -103,7 +102,6 @@ export function usePianoGasless() {
 
     const txHash = await sendUserOperation({
       smartAccount,
-      walletClient,
       to: PIANO_CONTRACT_ADDRESS,
       value: "0",
     });
@@ -123,7 +121,6 @@ export function usePianoGasless() {
 
       const txHash = await sendUserOperation({
         smartAccount,
-        walletClient,
         to: PIANO_CONTRACT_ADDRESS,
         value: "0.0001",
       });
@@ -152,7 +149,6 @@ export function usePianoGasless() {
 
         const txHash = await sendUserOperation({
           smartAccount,
-          walletClient,
           to: PIANO_CONTRACT_ADDRESS,
           value: "0",
         });
