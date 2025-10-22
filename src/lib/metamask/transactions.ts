@@ -51,7 +51,7 @@ export async function fundSmartAccount(
 
   const hash = await walletClient.sendTransaction({
     to: smartAccountAddress,
-    value: BigInt(amount) / BigInt(10 ** 18),
+    value: BigInt(amount) * BigInt(10 ** 18),
   } as SendTransactionParameters);
 
   console.log("Transaction de financement envoyée:", hash);

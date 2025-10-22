@@ -1113,7 +1113,7 @@ const PianoTilesGame: React.FC = () => {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
 
-      await fundSmartAccount(walletClient, smartAccountAddress, amount);
+      await fundSmartAccount(walletClient, smartAccountAddress, "1");
 
       const result = await refresh();
 
