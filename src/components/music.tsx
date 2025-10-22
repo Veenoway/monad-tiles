@@ -121,7 +121,7 @@ const menuBgMusic: string = "/sound/route.mp3";
 const gameOverBgMusics: string[] = ["/sound/tapion.mp3"];
 const gameOverSound: string = "/sound/haha.mp3";
 
-type LeaderboardEntry = [string, number, number];
+// type LeaderboardEntry = [string, number, number];
 
 const PianoTilesGame: React.FC = () => {
   const { isConnected, chainId } = useAccount();
@@ -129,8 +129,8 @@ const PianoTilesGame: React.FC = () => {
   const { switchChain } = useSwitchChain();
   const { actions, isEthProviderAvailable } = useMiniAppContext();
   const {
-    userRank,
-    currentGlobalCount,
+    // userRank,
+    // currentGlobalCount,
     leaderboardFormatted,
     click,
     submitScore,
@@ -777,10 +777,10 @@ const PianoTilesGame: React.FC = () => {
     sendTransaction,
   ]);
 
-  const addressSlicer = (address?: string, endCut = 4) => {
-    if (!address) return "...";
-    return `${address.slice(0, 4)}...${address.slice(-endCut)}`;
-  };
+  // const addressSlicer = (address?: string, endCut = 4) => {
+  //   if (!address) return "...";
+  //   return `${address.slice(0, 4)}...${address.slice(-endCut)}`;
+  // };
 
   const renderSettings = () => {
     return (
