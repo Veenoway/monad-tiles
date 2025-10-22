@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// lib/metamask/transactions.ts - VERSION COMPLÈTE FINALE
+// lib/metamask/transactions.ts - VERSION CORRIGÉE POUR FARCASTER
 
 import { PIANO_CONTRACT_ABI } from "@/constant/pianoTiles";
 import { createPimlicoClient } from "permissionless/clients/pimlico";
@@ -139,6 +139,39 @@ export async function sendUserOperation({
     );
   }
 
+  // ✅ FIX FARCASTER : Demander l'autorisation de signer AVANT d'envoyer la UserOperation
+  const signer = smartAccount.signer;
+  if (signer?.walletClient?.transport) {
+    const provider = (signer.walletClient.transport as any).provider;
+
+    if (provider?.isFarcaster || provider?.isFrameProvider) {
+      console.log("🟣 Demande de permission de signature Farcaster...");
+      try {
+        // Demander explicitement la permission de signer
+        await provider.request({
+          method: "wallet_requestPermissions",
+          params: [
+            {
+              eth_accounts: {},
+            },
+          ],
+        });
+        console.log("✅ Permission de signature accordée");
+
+        // Attendre un peu pour que la permission soit bien prise en compte
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      } catch (error: any) {
+        console.log("⚠️ Erreur permission:", error.message);
+        // Si la permission est déjà accordée, continuer quand même
+        if (!error.message?.includes("already")) {
+          throw new Error(
+            "Permission de signature refusée. Veuillez autoriser l'application dans Farcaster."
+          );
+        }
+      }
+    }
+  }
+
   const pimlicoClient = createPimlicoClient({
     transport: http(
       `https://api.pimlico.io/v2/10143/rpc?apikey=${process.env.NEXT_PUBLIC_PIMLICO_API_KEY}`
@@ -187,7 +220,7 @@ export async function sendUserOperation({
     });
 
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    console.log(`CONFIRMÉE en ${duration}s !`);
+    console.log(`✅ CONFIRMÉE en ${duration}s !`);
     console.log("Transaction hash:", receipt.transactionHash);
     console.log("Block:", receipt.blockNumber);
 
@@ -209,6 +242,12 @@ export async function sendUserOperation({
 
     if (error.message?.includes("insufficient")) {
       throw new Error("Fonds insuffisants dans le Smart Account");
+    }
+
+    if (error.message?.includes("not been authorized")) {
+      throw new Error(
+        "Autorisation refusée. Veuillez rafraîchir la page et réessayer."
+      );
     }
 
     throw new Error(`Erreur: ${error.shortMessage || error.message}`);
@@ -233,7 +272,7 @@ export async function diagnoseSmartAccount(smartAccountAddress: Address) {
     const balance = await publicClient.getBalance({
       address: smartAccountAddress,
     });
-    console.log("Solde:", formatEther(balance), "MON");
+    console.log("💰 Solde:", formatEther(balance), "MON");
 
     if (balance < parseEther("0.001")) {
       console.log("⚠️  ATTENTION: Solde faible ! Ajoutez au moins 0.01 MON");
@@ -266,7 +305,7 @@ export async function diagnoseSmartAccount(smartAccountAddress: Address) {
     console.log("🚪 Entry Points:", entryPoints);
 
     console.log("\n═══════════════════════════════════");
-    console.log("DIAGNOSTIC TERMINÉ");
+    console.log("✅ DIAGNOSTIC TERMINÉ");
     console.log("═══════════════════════════════════\n");
 
     return {
@@ -280,6 +319,7 @@ export async function diagnoseSmartAccount(smartAccountAddress: Address) {
     throw error;
   }
 }
+
 // ===================================
 // 5. TEST DU BUNDLER
 // ===================================
