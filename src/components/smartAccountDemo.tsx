@@ -73,7 +73,7 @@ export function SmartAccountManager({
     <div className="w-full h-full  py-10 space-y-6 z-[1000] bg-[url('/bg/main-bg.jpg')] bg-no-repeat bg-bottom absolute flex flex-col items-center">
       <Image src="/logo/new-logo.png" alt="logo" width={300} height={120} />
       <div className="rounded-lg shadow">
-        <h3 className="font-bold text-5xl mb-10 mt-20">
+        <h3 className="font-bold text-5xl mb-10 mt-20 text-white">
           Setup your <br />
           Smart account{" "}
         </h3>
