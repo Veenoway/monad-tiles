@@ -879,11 +879,11 @@ const PianoTilesGame: React.FC = () => {
           Leaderboard
         </h2>
 
-        <div className="text-yellow-300 text-center mb-4 text-sm">
-          Leaderboard updates once every 2 hours
-        </div>
+        <h2 className="text-4xl text-white font-bold uppercase italic mb-3 mt-20">
+          Coming soon...
+        </h2>
 
-        <div className="w-full max-h-[470px] overflow-y-auto hide-scrollbar rounded-md p-4">
+        {/* <div className="w-full max-h-[470px] overflow-y-auto hide-scrollbar rounded-md p-4">
           <div className="w-full max-h-[470px]">
             <table className="min-w-full text-left text-xl">
               <thead className="border-b-2 border-[#a1055c]">
@@ -951,7 +951,7 @@ const PianoTilesGame: React.FC = () => {
               </span>
             </div>
           </div>
-        )}
+        )} */}
         <button
           onClick={() => setShowLeaderboard(false)}
           className="mt-10 px-4 py-2 uppercase text-2xl hover:scale-95 transition-all duration-200 ease-in-out bg-[#a1055c] text-white rounded-md"
