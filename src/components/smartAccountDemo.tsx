@@ -28,6 +28,9 @@ export function SmartAccountManager({
     setIsProcessing(true);
 
     try {
+      console.log("walletClient", walletClient);
+      console.log("smartAccountAddress", smartAccountAddress);
+      console.log("amount", amount);
       await fundSmartAccount(walletClient, smartAccountAddress, amount);
 
       const result = await refresh();
