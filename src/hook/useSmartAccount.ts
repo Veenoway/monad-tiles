@@ -16,26 +16,45 @@ interface SmartAccountState {
 export function useSmartAccount() {
   const { address } = useAccount();
   const { isEthProviderAvailable } = useMiniAppContext();
+  const { ethProvider } = useFrame();
+
   const [state, setState] = useState<SmartAccountState>({
     smartAccount: null,
     isLoading: false,
     error: null,
     smartAccountAddress: null,
   });
-  const { ethProvider } = useFrame();
 
   useEffect(() => {
     async function initSmartAccount() {
-      if (!address || !isEthProviderAvailable) return;
+      // ✅ Attendre que TOUS les éléments soient prêts
+      if (!address) {
+        console.log("⏳ Waiting for address...");
+        return;
+      }
+
+      // Pour Farcaster : attendre explicitement le ethProvider
+      const provider = ethProvider || (window as any).ethereum;
+
+      if (!provider) {
+        console.log("⏳ Waiting for provider...");
+        return;
+      }
+
+      // Pour les autres wallets : vérifier isEthProviderAvailable
+      if (!ethProvider && !isEthProviderAvailable) {
+        console.log("⏳ Waiting for eth provider...");
+        return;
+      }
 
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
-        const provider = ethProvider || (window as any).ethereum;
-
-        if (!provider) {
-          throw new Error("Ethereum provider not available");
-        }
+        console.log("🚀 Initializing Smart Account...", {
+          address,
+          hasEthProvider: !!ethProvider,
+          hasWindowEthereum: !!(window as any).ethereum,
+        });
 
         const smartAccount = await createHybridSmartAccount(provider, address);
 
@@ -45,7 +64,10 @@ export function useSmartAccount() {
           isLoading: false,
           error: null,
         });
+
+        console.log("✅ Smart Account initialized:", smartAccount.address);
       } catch (err) {
+        console.error("❌ Smart Account initialization failed:", err);
         setState({
           smartAccount: null,
           smartAccountAddress: null,
@@ -59,7 +81,7 @@ export function useSmartAccount() {
     }
 
     initSmartAccount();
-  }, [address, isEthProviderAvailable]);
+  }, [address, isEthProviderAvailable, ethProvider]); // ✅ Ajouter ethProvider dans les dépendances
 
   return state;
 }
