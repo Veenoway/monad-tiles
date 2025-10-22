@@ -54,7 +54,9 @@ export async function fundSmartAccount(
   const monadWalletClient = createWalletClient({
     account: walletClient.account,
     chain: monadTestnet,
-    transport: http("https://monad-testnet.drpc.org"),
+    transport: http(
+      "https://monad-testnet.blockvision.org/v1/31Ihx9ZHjswZZld678DwIAer7H9"
+    ),
   });
 
   // 3. Envoyer avec le bon client
