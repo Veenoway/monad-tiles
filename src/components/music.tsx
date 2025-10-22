@@ -1098,7 +1098,7 @@ const PianoTilesGame: React.FC = () => {
   const { data: walletClient } = useWalletClient();
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const handleFundWallet = async (amount: string) => {
+  const handleFundWallet = async () => {
     if (!walletClient || !smartAccountAddress) return;
 
     setIsProcessing(true);
@@ -1252,7 +1252,7 @@ const PianoTilesGame: React.FC = () => {
           </div>
           {smartAccount ? (
             <button
-              onClick={() => handleFundWallet("1")}
+              onClick={handleFundWallet}
               disabled={isProcessing}
               className="font-bold uppercase text-3xl mt-2.5 h-[55px] bg-[#a1055c] rounded-md text-white px-4 mx-auto py-2 hover:scale-95 transition-all duration-200 ease-in-out disabled:opacity-50"
             >
