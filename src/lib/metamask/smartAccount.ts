@@ -17,7 +17,10 @@ export async function createHybridSmartAccount(
     isFarcaster,
     isMetaMask: provider.isMetaMask,
     providerKeys: Object.keys(provider),
+    ownerAddress, // ✅ LOG l'adresse reçue
   });
+
+  let accountAddress: Address = ownerAddress;
 
   // Pour Farcaster : demander TOUTES les permissions nécessaires dès le début
   if (isFarcaster) {
@@ -31,15 +34,15 @@ export async function createHybridSmartAccount(
       });
       console.log("✅ Comptes Farcaster:", accounts);
 
-      // ✅ ÉTAPE 2 : Vérifier que l'adresse correspond
-      if (accounts[0]?.toLowerCase() !== ownerAddress.toLowerCase()) {
-        console.warn("⚠️ Adresse différente:", {
-          expected: ownerAddress,
-          got: accounts[0],
-        });
+      // ✅ CRITIQUE : Utiliser le compte retourné par Farcaster, pas ownerAddress
+      if (accounts && accounts[0]) {
+        accountAddress = accounts[0] as Address;
+        console.log("📍 Adresse Farcaster utilisée:", accountAddress);
+      } else {
+        throw new Error("Aucun compte Farcaster disponible");
       }
 
-      // ✅ ÉTAPE 3 : Demander TOUTES les permissions nécessaires
+      // ✅ ÉTAPE 2 : Demander TOUTES les permissions nécessaires
       console.log("2️⃣ Demande des permissions complètes...");
       await provider.request({
         method: "wallet_requestPermissions",
@@ -52,14 +55,23 @@ export async function createHybridSmartAccount(
 
       console.log("✅ Permissions Farcaster accordées");
 
-      // ✅ ÉTAPE 4 : Attendre un peu pour que tout soit bien initialisé
+      // ✅ ÉTAPE 3 : Attendre un peu pour que tout soit bien initialisé
       await new Promise((resolve) => setTimeout(resolve, 300));
       console.log("✅ Initialisation Farcaster terminée");
     } catch (error: any) {
-      console.error("❌ Erreur critique permissions Farcaster:", error.message);
-      // Pour Farcaster, on DOIT avoir les permissions
+      console.error("❌ Erreur permissions Farcaster:", error);
+
+      // ✅ Cas spécifique : domaine non autorisé
+      if (error.message?.includes("not been authorized")) {
+        throw new Error(
+          "FARCASTER_NOT_AUTHORIZED: Votre domaine n'est pas autorisé dans la configuration Farcaster Frame. " +
+            "Veuillez ajouter votre domaine dans allowedOrigins ou utilisez MetaMask."
+        );
+      }
+
+      // Pour les autres erreurs Farcaster
       throw new Error(
-        "Impossible d'obtenir les permissions Farcaster. Veuillez réessayer."
+        `Impossible d'obtenir les permissions Farcaster: ${error.message}`
       );
     }
   } else {
@@ -69,9 +81,24 @@ export async function createHybridSmartAccount(
       method: "eth_requestAccounts",
     });
     console.log("✅ Comptes disponibles:", accounts);
+
+    // Pour les wallets standard, utiliser aussi le compte retourné
+    if (accounts && accounts[0]) {
+      accountAddress = accounts[0] as Address;
+    }
   }
 
-  // ✅ FIX 3 : Ne pas spécifier account si ce n'est pas nécessaire pour Farcaster
+  // ✅ VÉRIFICATION CRITIQUE : L'adresse ne doit jamais être null/undefined
+  if (
+    !accountAddress ||
+    accountAddress === "0x0000000000000000000000000000000000000000"
+  ) {
+    throw new Error("Adresse de compte invalide ou manquante");
+  }
+
+  console.log("📍 Adresse finale utilisée:", accountAddress);
+
+  // ✅ Pour Farcaster : Ne PAS spécifier account dans walletClient
   const walletClientConfig: any = {
     chain: monadTestnet,
     transport: custom(provider),
@@ -79,32 +106,31 @@ export async function createHybridSmartAccount(
 
   // Pour les wallets non-Farcaster, on peut spécifier l'account
   if (!isFarcaster) {
-    walletClientConfig.account = ownerAddress;
+    walletClientConfig.account = accountAddress;
   }
 
   const walletClient = createWalletClient(walletClientConfig);
 
   console.log("📦 Création du Smart Account Hybrid...");
-
-  // ✅ FIX 4 : Utiliser l'adresse du walletClient si disponible, sinon ownerAddress
-  const signerAddress = isFarcaster
-    ? ((await provider.request({ method: "eth_accounts" }))[0] as Address)
-    : ownerAddress;
-
-  console.log("👤 Signer address:", signerAddress);
+  console.log("📍 Signer address:", accountAddress);
 
   const smartAccount = await toMetaMaskSmartAccount({
     client: publicClient,
     implementation: Implementation.Hybrid,
-    deployParams: [signerAddress, [], [], []], // ✅ Utiliser l'adresse correcte
+    deployParams: [accountAddress, [], [], []], // ✅ Utiliser l'adresse correcte
     deploySalt: "0x",
     signer: {
       walletClient: walletClient as any,
-      account: { address: signerAddress },
+      account: { address: accountAddress },
     },
   });
 
   console.log("✅ Smart Account créé:", smartAccount.address);
+
+  // ✅ VÉRIFICATION FINALE : Le smart account doit avoir une adresse
+  if (!smartAccount.address) {
+    throw new Error("Smart Account créé mais sans adresse valide");
+  }
 
   return smartAccount;
 }

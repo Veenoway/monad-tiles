@@ -14,7 +14,7 @@ interface SmartAccountState {
 }
 
 export function useSmartAccount() {
-  const { address } = useAccount();
+  const wagmiAccount = useAccount();
   const { isEthProviderAvailable } = useMiniAppContext();
   const { ethProvider } = useFrame();
 
@@ -25,15 +25,37 @@ export function useSmartAccount() {
     smartAccountAddress: null,
   });
 
+  // ✅ DEBUG : Logger tous les states
+  useEffect(() => {
+    console.log("🔍 useSmartAccount - État actuel:", {
+      wagmiAddress: wagmiAccount.address,
+      wagmiIsConnected: wagmiAccount.isConnected,
+      wagmiIsConnecting: wagmiAccount.isConnecting,
+      wagmiConnector: wagmiAccount.connector?.name,
+      hasEthProvider: !!ethProvider,
+      isEthProviderAvailable,
+      ethProviderType: ethProvider?.isFarcaster
+        ? "Farcaster"
+        : ethProvider?.isMetaMask
+        ? "MetaMask"
+        : "Unknown",
+    });
+  }, [wagmiAccount, ethProvider, isEthProviderAvailable]);
+
   useEffect(() => {
     async function initSmartAccount() {
-      // ✅ Attendre que TOUS les éléments soient prêts
-      if (!address) {
-        console.log("⏳ Waiting for address...");
+      // ✅ VÉRIFICATION 1 : wagmi address
+      if (!wagmiAccount.address) {
+        console.log("⏳ Waiting for wagmi address...", {
+          isConnected: wagmiAccount.isConnected,
+          isConnecting: wagmiAccount.isConnecting,
+        });
         return;
       }
 
-      // Pour Farcaster : attendre explicitement le ethProvider
+      console.log("✅ Wagmi address available:", wagmiAccount.address);
+
+      // ✅ VÉRIFICATION 2 : Provider
       const provider = ethProvider || (window as any).ethereum;
 
       if (!provider) {
@@ -41,22 +63,55 @@ export function useSmartAccount() {
         return;
       }
 
-      // Pour les autres wallets : vérifier isEthProviderAvailable
+      console.log("✅ Provider available:", {
+        isFarcaster: provider.isFarcaster || provider.isFrameProvider,
+        isMetaMask: provider.isMetaMask,
+      });
+
+      // ✅ VÉRIFICATION 3 : Pour les wallets non-Farcaster, vérifier isEthProviderAvailable
       if (!ethProvider && !isEthProviderAvailable) {
-        console.log("⏳ Waiting for eth provider...");
+        console.log("⏳ Waiting for eth provider availability...");
         return;
+      }
+
+      // ✅ VÉRIFICATION 4 : Pour Farcaster, attendre que eth_accounts soit disponible
+      if (provider.isFarcaster || provider.isFrameProvider) {
+        try {
+          const accounts = await provider.request({
+            method: "eth_accounts",
+          });
+          console.log("✅ Farcaster accounts:", accounts);
+
+          if (!accounts || accounts.length === 0) {
+            console.log("⏳ Waiting for Farcaster accounts...");
+            return;
+          }
+        } catch (error: any) {
+          console.log("⚠️ Cannot check Farcaster accounts:", error.message);
+          // Continuer quand même
+        }
       }
 
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       try {
         console.log("🚀 Initializing Smart Account...", {
-          address,
+          address: wagmiAccount.address,
           hasEthProvider: !!ethProvider,
           hasWindowEthereum: !!(window as any).ethereum,
+          isFarcaster: provider?.isFarcaster || provider?.isFrameProvider,
         });
 
-        const smartAccount = await createHybridSmartAccount(provider, address);
+        // ✅ CRITIQUE : Passer l'adresse de wagmi
+        const smartAccount = await createHybridSmartAccount(
+          provider,
+          wagmiAccount.address
+        );
+
+        // ✅ VÉRIFICATION 5 : Le smart account doit avoir une adresse
+        if (!smartAccount || !smartAccount.address) {
+          throw new Error("Smart Account créé sans adresse valide");
+        }
 
         setState({
           smartAccount,
@@ -66,8 +121,9 @@ export function useSmartAccount() {
         });
 
         console.log("✅ Smart Account initialized:", smartAccount.address);
-      } catch (err) {
+      } catch (err: any) {
         console.error("❌ Smart Account initialization failed:", err);
+
         setState({
           smartAccount: null,
           smartAccountAddress: null,
@@ -81,7 +137,12 @@ export function useSmartAccount() {
     }
 
     initSmartAccount();
-  }, [address, isEthProviderAvailable, ethProvider]); // ✅ Ajouter ethProvider dans les dépendances
+  }, [
+    wagmiAccount.address,
+    wagmiAccount.isConnected,
+    isEthProviderAvailable,
+    ethProvider,
+  ]);
 
   return state;
 }
