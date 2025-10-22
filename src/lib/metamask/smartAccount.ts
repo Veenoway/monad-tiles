@@ -43,18 +43,16 @@ export async function createHybridSmartAccount(
       console.log("⚠️ Permission déjà accordée:", error.message);
     }
 
-    // Owner custom qui LOG et utilise directement le provider
+    // Owner custom
     const owner = {
       address: ownerAddress,
 
       async signMessage({ message }: any) {
         console.log("📝 [FARCASTER] signMessage appelé");
-        console.log("📝 Message brut:", message);
 
         try {
           let messageToSign: string;
 
-          // Gérer différents formats de message
           if (typeof message === "string") {
             messageToSign = message;
           } else if (message.raw) {
@@ -66,38 +64,28 @@ export async function createHybridSmartAccount(
             messageToSign = JSON.stringify(message);
           }
 
-          console.log("📝 Message formaté:", messageToSign);
-          console.log("📝 Appel personal_sign...");
+          console.log("📝 Appel personal_sign avec:", messageToSign);
 
           const signature = await provider.request({
             method: "personal_sign",
             params: [messageToSign, ownerAddress],
           });
 
-          console.log(
-            "✅ Signature obtenue:",
-            signature.substring(0, 20) + "..."
-          );
+          console.log("✅ Signature obtenue");
           return signature as `0x${string}`;
         } catch (error: any) {
-          console.error("❌ Erreur signature message:", error);
-          console.error("❌ Stack:", error.stack);
-          throw new Error(`Signature refusée par Farcaster: ${error.message}`);
+          console.error("❌ Erreur signature:", error);
+          throw error;
         }
       },
 
-      async signTransaction(tx: any) {
+      async signTransaction() {
         console.log("📝 [FARCASTER] signTransaction appelé");
-        console.log("📝 Transaction:", tx);
-
-        throw new Error(
-          "signTransaction non supporté par Farcaster - utilisez sendUserOperation"
-        );
+        throw new Error("signTransaction non supporté");
       },
 
       async signTypedData(typedData: any) {
         console.log("📝 [FARCASTER] signTypedData appelé");
-        console.log("📝 TypedData:", typedData);
 
         try {
           const dataToSign = {
@@ -107,28 +95,19 @@ export async function createHybridSmartAccount(
             message: typedData.message,
           };
 
-          console.log("📝 Data formatée:", JSON.stringify(dataToSign, null, 2));
-          console.log("📝 Appel eth_signTypedData_v4...");
-
           const signature = await provider.request({
             method: "eth_signTypedData_v4",
             params: [ownerAddress, JSON.stringify(dataToSign)],
           });
 
-          console.log(
-            "✅ Signature typedData obtenue:",
-            signature.substring(0, 20) + "..."
-          );
+          console.log("✅ Signature typedData obtenue");
           return signature as `0x${string}`;
         } catch (error: any) {
           console.error("❌ Erreur signature typedData:", error);
-          console.error("❌ Stack:", error.stack);
-          throw new Error(`Signature typedData refusée: ${error.message}`);
+          throw error;
         }
       },
     };
-
-    console.log("🔨 Création du SimpleSmartAccount...");
 
     const smartAccount = await toSimpleSmartAccount({
       client: publicClient,
@@ -140,11 +119,13 @@ export async function createHybridSmartAccount(
     });
 
     console.log("✅ SimpleSmartAccount Farcaster créé:", smartAccount.address);
-    return smartAccount;
+
+    // RETOURNER AUSSI LE TYPE
+    return { smartAccount, isFarcaster: true };
   }
 
   // ========================================
-  // AUTRES WALLETS : Votre code actuel
+  // AUTRES WALLETS
   // ========================================
   console.log("📦 Création du Smart Account Hybrid pour wallet standard...");
 
@@ -166,5 +147,5 @@ export async function createHybridSmartAccount(
 
   console.log("✅ Smart Account créé:", smartAccount.address);
 
-  return smartAccount;
+  return { smartAccount, isFarcaster: false };
 }

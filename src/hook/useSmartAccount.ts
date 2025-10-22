@@ -41,7 +41,7 @@ export function useSmartAccount() {
 
         setState({
           smartAccount,
-          smartAccountAddress: smartAccount.address,
+          smartAccountAddress: (smartAccount as any).address,
           isLoading: false,
           error: null,
         });
