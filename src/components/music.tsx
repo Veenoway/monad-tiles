@@ -508,9 +508,10 @@ const PianoTilesGame: React.FC = () => {
     setIsPlaying(false);
     if (score > 0 && address) {
       try {
-        const txHash = await submitScore(score, () =>
-          setIsGameOverLoading(false)
-        );
+        // const txHash = await submitScore(score, () =>
+        //   setIsGameOverLoading(false)
+        // );
+        setIsGameOverLoading(false);
         const highestScore = localStorage.getItem("score");
         console.log("highestScore", highestScore);
         console.log("score", score);
@@ -522,9 +523,9 @@ const PianoTilesGame: React.FC = () => {
           localStorage.setItem("highestScore", score.toString());
           setHighestScore(score);
         }
-        if (txHash) {
-          setIsGameOverLoading(false);
-        }
+        // if (txHash) {
+        //   setIsGameOverLoading(false);
+        // }
       } catch (error) {
         console.error("Error submitting score:", error);
         showNotification("Failed to submit score.", "error");
